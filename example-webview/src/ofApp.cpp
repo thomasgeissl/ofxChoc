@@ -4,11 +4,11 @@ void ofApp::setup()
 {
   _speed = 0.5;
   ofAddListener(_webview._event, this, &ofApp::onWebViewEvent);
-  _webview.setup();
+  _webview.setup("example-webview");
   _webview.setHTML(R"xxx(
       <!DOCTYPE html> <html>
-        <head> <title>Page Title</title> </head>
-        <script nonce="1234"> 
+        <head> <title>ofxChoc::example-webview</title> </head>
+        <script> 
           function sendEvent()
           {
             eventCallbackFn({ event: "randombg"})
