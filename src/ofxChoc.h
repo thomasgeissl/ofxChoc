@@ -17,13 +17,16 @@ namespace ofxChoc
         };
         WebView() : _window({100, 100, 800, 600})
         {
-            _window.setContent(_webview.getViewHandle());
+            choc::ui::WebView::Options opts;
+            opts.enableDebugMode = true;
+            _webview = std::make_unique<choc::ui::WebView>(opts);
+            _window.setContent(_webview->getViewHandle());
         };
         ~WebView()
         {
-            stopMessageLoop();
+            // stopMessageLoop();
         }
-        void setup(std::string title = "ofxCho::WebView")
+        void setup(std::string title = "ofxChoc::WebView")
         {
             choc::ui::setWindowsDPIAwareness();
             _window.setWindowTitle(title);
@@ -35,41 +38,41 @@ namespace ofxChoc
 
             _window.toFront();
 
-            _webview.bind("eventCallbackFn", [this](const choc::value::ValueView &args) -> choc::value::Value
-                          {
-                auto message = "eventCallbackFn() called with args: " + choc::json::toString (args);
-                choc::messageloop::postMessage ([this, message]
-                    {
-                        ofLogNotice() << "WebView callback message: " << message;
-                        Event event;
-                        event.name = "event";
-                        event.value = ofJson::parse(message);
-                        this->_event.notify(event);
-                    }
-                );
-                return choc::value::createString (message); });
+            // Bind the JavaScript function to the C++ callback
+            _webview->bind("eventCallbackFn", [this](const choc::value::ValueView &args) -> choc::value::Value
+                           {
+        auto message = "eventCallbackFn() called with args: " + choc::json::toString(args);
 
-            Event event;
-            event.name = "event";
-            _event.notify(event);
+        Event event;
+        event.name = "event";
+        event.value = ofJson::parse(choc::json::toString(args));
+
+        _event.notify(event);
+
+        return choc::value::createString(message); });
+
+            startMessageLoop();
         }
+
         void update()
         {
         }
         void navigate(std::string url)
         {
-            _webview.navigate(url);
+            _webview->navigate(url);
         }
         void setHTML(std::string html)
         {
-            _webview.setHTML(html);
+            _webview->setHTML(html);
+        }
+        void notifyEvent(ofJson value){
+            
         }
         void startMessageLoop()
         {
-            _messageLoopThread = std::thread([]()
-            {
-                choc::messageloop::run();
-            });
+            choc::messageloop::initialise();
+            // _messageLoopThread = std::thread([]()
+            //                                  { choc::messageloop::run(); });
         }
         void stopMessageLoop()
         {
@@ -79,8 +82,12 @@ namespace ofxChoc
                 _messageLoopThread.join();
             }
         }
+        choc::ui::WebView *getWebViewPtr()
+        {
+            return _webview.get();
+        }
         choc::ui::DesktopWindow _window;
-        choc::ui::WebView _webview;
+        std::unique_ptr<choc::ui::WebView> _webview;
         std::thread _messageLoopThread;
         ofEvent<Event> _event;
     };

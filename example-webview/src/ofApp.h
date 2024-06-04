@@ -26,4 +26,5 @@ public:
     void onWebViewEvent(ofxChoc::WebView::Event &event);
 
     ofxChoc::WebView _webview;
+    float _speed;
 };
