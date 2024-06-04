@@ -8,19 +8,7 @@ void ofApp::setup()
   _webview.setHTML(R"xxx(
       <!DOCTYPE html> <html>
         <head> <title>Page Title</title> </head>
-        <script nonce="1234">
-        // TODO: inject this to global scope from oF side
-          window.___eventHandler = function(event, value){
-            if (of.listeners[event]) {
-              of.listeners[event](value);
-            }
-          }
-          window.of = {
-            listeners: {},
-            addListener: function (event, callback) {
-              this.listeners[event] = callback;
-            }
-          }
+        <script nonce="1234"> 
           function sendEvent()
           {
             eventCallbackFn({ event: "randombg"})
@@ -31,13 +19,11 @@ void ofApp::setup()
             const slider = document.getElementById("slider");
             const sliderValue = document.getElementById("sliderValue");
 
-            // Function to handle slider value changes
             function sliderCallback(value) {
                 console.log("Slider value changed to: " + value);
                 eventCallbackFn({ slider: value})
             }
 
-            // Update displayed value and call the callback handler
             slider.oninput = function() {
                 sliderValue.innerText = this.value;
                 sliderCallback(this.value);

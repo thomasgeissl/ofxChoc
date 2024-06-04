@@ -20,6 +20,21 @@ namespace ofxChoc
             choc::ui::WebView::Options opts;
             opts.enableDebugMode = true;
             _webview = std::make_unique<choc::ui::WebView>(opts);
+            _webview->addInitScript(
+                R"xxx(
+    window.___eventHandler = function(event, value) {
+        console.log("event handler");
+        if (of.listeners[event]) {
+            of.listeners[event](value);
+        }
+    }; 
+    window.of = {
+        listeners: {},
+        addListener: function (event, callback) {
+            this.listeners[event] = callback;
+        }
+    };
+)xxx");
             _window.setContent(_webview->getViewHandle());
         };
         ~WebView()
@@ -65,14 +80,14 @@ namespace ofxChoc
         {
             _webview->setHTML(html);
         }
-        void notifyEvent(std::string event, ofJson value){
+        void notifyEvent(std::string event, ofJson value)
+        {
             std::string js = "window.___eventHandler(";
-            js += "\""+event+"\"";
-            js +=", ";
+            js += "\"" + event + "\"";
+            js += ", ";
             js += value.dump();
             js += ")";
             _webview->evaluateJavascript(js);
-            _webview->evaluateJavascript("console.log(of)");
         }
         void startMessageLoop()
         {
