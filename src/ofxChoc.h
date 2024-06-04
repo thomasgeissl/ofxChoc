@@ -22,7 +22,7 @@ namespace ofxChoc
             _webview = std::make_unique<choc::ui::WebView>(opts);
             _webview->addInitScript(
                 R"xxx(
-    window.___eventHandler = function(event, value) {
+    window.___ofxChoc2Js = function(event, value) {
         if (ofxChoc.listeners[event]) {
             ofxChoc.listeners[event](value);
         }
@@ -31,6 +31,9 @@ namespace ofxChoc
         listeners: {},
         addListener: function (event, callback) {
             this.listeners[event] = callback;
+        },
+        notifyEvent: function (event, value) {
+            ___js2ofxChoc(event, value);
         }
     };
 )xxx");
@@ -53,13 +56,15 @@ namespace ofxChoc
             _window.toFront();
 
             // Bind the JavaScript function to the C++ callback
-            _webview->bind("eventCallbackFn", [this](const choc::value::ValueView &args) -> choc::value::Value
+            _webview->bind("___js2ofxChoc", [this](const choc::value::ValueView &args) -> choc::value::Value
                            {
-        auto message = "eventCallbackFn() called with args: " + choc::json::toString(args);
+        auto message = "___js2ofxChoc() called with args: " + choc::json::toString(args);
 
         Event event;
-        event.name = "event";
-        event.value = ofJson::parse(choc::json::toString(args));
+        auto payload = ofJson::parse(choc::json::toString(args));
+        // TODO: proper error handling
+        event.name = payload[0];
+        event.value = payload[1];
 
         _event.notify(event);
 
@@ -81,7 +86,7 @@ namespace ofxChoc
         }
         void notifyEvent(std::string event, ofJson value)
         {
-            std::string js = "window.___eventHandler(";
+            std::string js = "window.___ofxChoc2Js(";
             js += "\"" + event + "\"";
             js += ", ";
             js += value.dump();

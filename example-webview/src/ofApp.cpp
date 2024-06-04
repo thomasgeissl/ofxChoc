@@ -11,8 +11,7 @@ void ofApp::setup()
         <script> 
           function sendEvent()
           {
-            eventCallbackFn({ event: "randombg"})
-              .then ((result) => { console.log(result); });
+                window.ofxChoc.notifyEvent("randombg")
           }
 
           document.addEventListener('DOMContentLoaded', (event) => {
@@ -21,7 +20,7 @@ void ofApp::setup()
 
             function sliderCallback(value) {
                 console.log("Slider value changed to: " + value);
-                eventCallbackFn({ slider: value})
+                window.ofxChoc.notifyEvent("slider", {"value": value})
             }
 
             slider.oninput = function() {
@@ -124,19 +123,19 @@ void ofApp::gotMessage(ofMessage msg)
 
 void ofApp::onWebViewEvent(ofxChoc::WebView::Event &event)
 {
-  for (auto item : event.value)
+  ofLogNotice() << event.name << " " << event.value.dump(2);
+  if (event.name == "slider")
   {
-    if (item.contains("slider"))
+    for (auto item : event.value)
     {
-      _speed = ofToFloat(item.at("slider").get<std::string>());
-    }
-    if (item.contains("event"))
-    {
-      auto name = item.at("event").get<std::string>();
-      if (name == "randombg")
+      if (item.contains("value"))
       {
-        ofBackground(ofRandom(255), ofRandom(255), ofRandom(255));
+        _speed = ofToFloat(item.at("value").get<std::string>());
       }
     }
+  }
+  if (event.name == "randombg")
+  {
+    ofBackground(ofRandom(255), ofRandom(255), ofRandom(255));
   }
 }
