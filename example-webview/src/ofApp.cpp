@@ -9,10 +9,22 @@ void ofApp::setup()
       <!DOCTYPE html> <html>
         <head> <title>Page Title</title> </head>
         <script nonce="1234">
+        // TODO: inject this to global scope from oF side
+          window.___eventHandler = function(event, value){
+            if (of.listeners[event]) {
+              of.listeners[event](value);
+            }
+          }
+          window.of = {
+            listeners: {},
+            addListener: function (event, callback) {
+              this.listeners[event] = callback;
+            }
+          }
           function sendEvent()
           {
             eventCallbackFn({ event: "randombg"})
-              .then ((result) => { document.getElementById ("eventResultDisplay").innerText = result; });
+              .then ((result) => { console.log(result); });
           }
 
           document.addEventListener('DOMContentLoaded', (event) => {
@@ -30,6 +42,11 @@ void ofApp::setup()
                 sliderValue.innerText = this.value;
                 sliderCallback(this.value);
             }
+
+            window.of.addListener("testevent", (value) => {
+              document.getElementById("from-of").textContent = JSON.stringify(value);
+              console.log("test event", value);
+            })
         });
         </script>
 
@@ -37,7 +54,10 @@ void ofApp::setup()
           <input type="range" id="slider" name="slider" min="0" max="1" step="0.01" value="0.5">
           <p>Value: <span id="sliderValue">0.5</span></p>
           <p><button onclick="sendEvent()">random bg</button></p>
-          <p id="eventResultDisplay"></p>
+          <div>
+            <h5>press e on the of side</h5>
+            <p id="from-of"></p>
+          </div>
         </body>
       </html>
     )xxx");
@@ -61,13 +81,9 @@ void ofApp::keyPressed(int key)
   {
   case 'e':
   {
-    ofJson ex1 = ofJson::parse(R"(
-  {
-    "pi": 3.141,
-    "happy": true
-  }
-)");
-    _webview.notifyEvent(ex1);
+    auto json = ofJson::parse(R"({})");
+    json["value"] = ofRandom(0, 1);
+    _webview.notifyEvent("testevent", json);
     break;
   }
   case ' ':
