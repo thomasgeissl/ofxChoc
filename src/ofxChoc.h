@@ -66,7 +66,10 @@ namespace ofxChoc
             _webview->setHTML(html);
         }
         void notifyEvent(ofJson value){
-            
+            std::string js = "console.log(";
+            js += value.dump();
+            js += ")";
+            _webview->evaluateJavascript(js);
         }
         void startMessageLoop()
         {

@@ -50,15 +50,26 @@ void ofApp::update()
 void ofApp::draw()
 {
   ofDrawCircle(
-    ofMap(std::sin(ofGetElapsedTimef()*_speed*8), -1, 1, 0, ofGetWidth()),
-    ofGetHeight() / 2, 
-    54);
+      ofMap(std::sin(ofGetElapsedTimef() * _speed * 8), -1, 1, 0, ofGetWidth()),
+      ofGetHeight() / 2,
+      54);
 }
 
 void ofApp::keyPressed(int key)
 {
   switch (key)
   {
+  case 'e':
+  {
+    ofJson ex1 = ofJson::parse(R"(
+  {
+    "pi": 3.141,
+    "happy": true
+  }
+)");
+    _webview.notifyEvent(ex1);
+    break;
+  }
   case ' ':
   {
     _webview.navigate("https://github.com/openFrameworks/openFrameworks");
@@ -111,13 +122,17 @@ void ofApp::gotMessage(ofMessage msg)
 
 void ofApp::onWebViewEvent(ofxChoc::WebView::Event &event)
 {
-  for(auto item  : event.value){
-    if(item.contains("slider")){
+  for (auto item : event.value)
+  {
+    if (item.contains("slider"))
+    {
       _speed = ofToFloat(item.at("slider").get<std::string>());
     }
-    if(item.contains("event")){
+    if (item.contains("event"))
+    {
       auto name = item.at("event").get<std::string>();
-      if(name == "randombg"){
+      if (name == "randombg")
+      {
         ofBackground(ofRandom(255), ofRandom(255), ofRandom(255));
       }
     }
