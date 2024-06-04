@@ -23,12 +23,11 @@ namespace ofxChoc
             _webview->addInitScript(
                 R"xxx(
     window.___eventHandler = function(event, value) {
-        console.log("event handler");
-        if (of.listeners[event]) {
-            of.listeners[event](value);
+        if (ofxChoc.listeners[event]) {
+            ofxChoc.listeners[event](value);
         }
     }; 
-    window.of = {
+    window.ofxChoc = {
         listeners: {},
         addListener: function (event, callback) {
             this.listeners[event] = callback;

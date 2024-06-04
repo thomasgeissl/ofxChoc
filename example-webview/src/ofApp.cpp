@@ -29,7 +29,7 @@ void ofApp::setup()
                 sliderCallback(this.value);
             }
 
-            window.of.addListener("testevent", (value) => {
+            window.ofxChoc.addListener("testevent", (value) => {
               document.getElementById("from-of").textContent = JSON.stringify(value);
               console.log("test event", value);
             })
