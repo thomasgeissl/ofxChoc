@@ -9,7 +9,7 @@ void ofApp::setup()
       <!DOCTYPE html> <html>
         <head> <title>ofxChoc::example-webview</title> </head>
         <script> 
-          function sendEvent()
+          function buttonCallback()
           {
                 window.ofxChoc.notifyEvent("randombg")
           }
@@ -38,7 +38,7 @@ void ofApp::setup()
         <body>
           <input type="range" id="slider" name="slider" min="0" max="1" step="0.01" value="0.5">
           <p>Value: <span id="sliderValue">0.5</span></p>
-          <p><button onclick="sendEvent()">random bg</button></p>
+          <p><button onclick="buttonCallback()">random bg</button></p>
           <div>
             <h5>press e on the of side</h5>
             <p id="from-of"></p>
@@ -123,7 +123,6 @@ void ofApp::gotMessage(ofMessage msg)
 
 void ofApp::onWebViewEvent(ofxChoc::WebView::Event &event)
 {
-  ofLogNotice() << event.name << " " << event.value.dump(2);
   if (event.name == "slider")
   {
     for (auto item : event.value)

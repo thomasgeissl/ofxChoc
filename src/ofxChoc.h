@@ -1,8 +1,7 @@
 #pragma once
 
-#include "./libs/choc/gui/choc_WebView.h"
-#include "./libs/choc/gui/choc_DesktopWindow.h"
-#include "./libs/choc/containers/choc_ArgumentList.h"
+#include "../libs/choc/gui/choc_WebView.h"
+#include "../libs/choc/gui/choc_DesktopWindow.h"
 
 namespace ofxChoc
 {
