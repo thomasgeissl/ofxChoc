@@ -32,6 +32,9 @@ void ofApp::setup()
               document.getElementById("from-of").textContent = JSON.stringify(value);
               console.log("test event", value);
             })
+            window.ofxChoc.addListener("testevent", (value) => {
+              console.log("test event, second listener on the same event, just to test if that works", value);
+            })
         });
         </script>
 

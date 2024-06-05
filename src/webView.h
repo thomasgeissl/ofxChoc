@@ -22,13 +22,18 @@ namespace ofxChoc
                 R"xxx(
     window.___ofxChoc2Js = function(event, value) {
         if (ofxChoc.listeners[event]) {
-            ofxChoc.listeners[event](value);
+            for(var i = 0; i < ofxChoc.listeners[event].length; i++){
+                ofxChoc.listeners[event][i](value);
+            }
         }
     }; 
     window.ofxChoc = {
         listeners: {},
         addListener: function (event, callback) {
-            this.listeners[event] = callback;
+            if(!this.listeners[event]){
+                this.listeners[event] = []
+            }
+            this.listeners[event].push(callback);
         },
         notifyEvent: function (event, value) {
             ___js2ofxChoc(event, value);
