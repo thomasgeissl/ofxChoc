@@ -2,7 +2,7 @@
 
 void ofApp::setup()
 {
-  _server.setup(1248);
+  _server.setup(1248, ofToDataPath("webview/dist"));
   _speed = 0.5;
   ofAddListener(_webview._event, this, &ofApp::onWebViewEvent);
   _webview.setup("example-webview");

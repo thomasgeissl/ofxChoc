@@ -2,7 +2,6 @@
 
 #include "ofMain.h"
 #include "ofxChoc.h"
-#include "webServer.h"
 
 class ofApp : public ofBaseApp
 {
@@ -26,7 +25,7 @@ public:
 
     void onWebViewEvent(ofxChoc::WebView::Event &event);
 
-    WebServer _server;
+    ofxChoc::WebServer _server;
     ofxChoc::WebView _webview;
     float _speed;
 };
