@@ -1,8 +1,7 @@
 #include "ofApp.h"
 
-ofApp::ofApp() : _fileWatcher(ofFilePath::getAbsolutePath("file.txt", true), 500)
+ofApp::ofApp() : _fileWatcher(ofFilePath::getAbsolutePath("speed.txt", true), 500)
 {
-  ofLogNotice() << ofFilePath::getAbsolutePath("file.txt");
 }
 void ofApp::setup()
 {
