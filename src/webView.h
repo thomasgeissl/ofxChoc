@@ -115,25 +115,89 @@ namespace ofxChoc
         }
         void addDomListener(std::string selector, std::string event)
         {
-            std::string js = "document.querySelector('";
+            std::string js = R"(
+        function serializeEvent(event) {
+            const commonProps = {
+                isTrusted: event.isTrusted,
+                type: event.type,
+                timeStamp: event.timeStamp
+            };
+
+            let specificProps = {};
+
+            if (event instanceof MouseEvent) {
+                specificProps = {
+                    screenX: event.screenX,
+                    screenY: event.screenY,
+                    clientX: event.clientX,
+                    clientY: event.clientY,
+                    ctrlKey: event.ctrlKey,
+                    shiftKey: event.shiftKey,
+                    altKey: event.altKey,
+                    metaKey: event.metaKey,
+                    button: event.button,
+                    buttons: event.buttons,
+                    relatedTarget: event.relatedTarget,
+                    x: event.x,
+                    y: event.y,
+                    offsetX: event.offsetX,
+                    offsetY: event.offsetY,
+                    pageX: event.pageX,
+                    pageY: event.pageY,
+                    movementX: event.movementX,
+                    movementY: event.movementY,
+                    region: event.region
+                };
+            } else if (event instanceof KeyboardEvent) {
+                specificProps = {
+                    key: event.key,
+                    code: event.code,
+                    location: event.location,
+                    ctrlKey: event.ctrlKey,
+                    shiftKey: event.shiftKey,
+                    altKey: event.altKey,
+                    metaKey: event.metaKey,
+                    repeat: event.repeat,
+                    isComposing: event.isComposing,
+                    charCode: event.charCode,
+                    keyCode: event.keyCode,
+                    which: event.which
+                };
+            } else if (event instanceof Event && event.type === 'load') {
+                specificProps = {
+                    // Add any specific properties for the load event if necessary
+                };
+            } else if (event instanceof Event) {
+                specificProps = {
+                    // Handle other common events and their properties
+                };
+            }
+
+            return ({ ...commonProps, ...specificProps });
+        }
+    )";
+
             if (selector == "window")
             {
-                js = "window.addEventListener('";
+                js += "window.addEventListener('";
             }
             else if (selector == "document")
             {
-                js = "document.addEventListener('";
+                js += "document.addEventListener('";
             }
             else
             {
-                js = "document.querySelector('";
+                js += "document.querySelector('";
                 js += selector;
                 js += "').addEventListener('";
             }
+
             js += event;
-            js += "', function(e){ window.ofxChoc.notifyEvent('dom', {selector: '" + selector + "', eventName: '" + event + "', event: e}); });";
+            js += "', function(e){ const serializedEvent = serializeEvent(e); window.ofxChoc.notifyEvent('dom', {selector: '" + selector + "', eventName: '" + event + "', event: serializedEvent}); });";
+
             _webview->evaluateJavascript(js);
         }
+
         choc::ui::DesktopWindow _window;
         std::unique_ptr<choc::ui::WebView> _webview;
         ofEvent<Event> _event;
