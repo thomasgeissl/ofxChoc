@@ -71,8 +71,9 @@ void ofApp::keyPressed(int key)
   {
   case 'd':
   {
+    _webview.addDomListener("window", "loaded");
+    _webview.addDomListener("document", "mousemove");
     _webview.addDomListener("#button", "mouseenter");
-
     break;
   }
   case 'e':
@@ -154,6 +155,8 @@ void ofApp::onWebViewDomEvent(ofxChoc::WebView::DomEvent &event)
 {
   if (event.selector == "#button")
   {
+    ofLogNotice() << "dom event: " << event.selector << " " << event.eventName << " " << event.value.dump(2);
+  }else{
     ofLogNotice() << "dom event: " << event.selector << " " << event.eventName << " " << event.value.dump(2);
   }
 }

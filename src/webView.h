@@ -116,8 +116,20 @@ namespace ofxChoc
         void addDomListener(std::string selector, std::string event)
         {
             std::string js = "document.querySelector('";
-            js += selector;
-            js += "').addEventListener('";
+            if (selector == "window")
+            {
+                js = "window.addEventListener('";
+            }
+            else if (selector == "document")
+            {
+                js = "document.addEventListener('";
+            }
+            else
+            {
+                js = "document.querySelector('";
+                js += selector;
+                js += "').addEventListener('";
+            }
             js += event;
             js += "', function(e){ window.ofxChoc.notifyEvent('dom', {selector: '" + selector + "', eventName: '" + event + "', event: e}); });";
             _webview->evaluateJavascript(js);
