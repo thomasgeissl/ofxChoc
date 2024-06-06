@@ -71,9 +71,7 @@ namespace ofxChoc
 
         _event.notify(event);
 
-        return choc::value::createString(message); });
-
-            startMessageLoop();
+            return choc::value::createString(message); });
         }
 
         void update()
@@ -96,27 +94,13 @@ namespace ofxChoc
             js += ")";
             _webview->evaluateJavascript(js);
         }
-        void startMessageLoop()
-        {
-            choc::messageloop::initialise();
-            // _messageLoopThread = std::thread([]()
-            //                                  { choc::messageloop::run(); });
-        }
-        void stopMessageLoop()
-        {
-            choc::messageloop::stop();
-            if (_messageLoopThread.joinable())
-            {
-                _messageLoopThread.join();
-            }
-        }
+        
         choc::ui::WebView *getWebViewPtr()
         {
             return _webview.get();
         }
         choc::ui::DesktopWindow _window;
         std::unique_ptr<choc::ui::WebView> _webview;
-        std::thread _messageLoopThread;
         ofEvent<Event> _event;
     };
 };
