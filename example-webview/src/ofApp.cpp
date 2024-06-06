@@ -4,6 +4,7 @@ void ofApp::setup()
 {
   _speed = 0.5;
   ofAddListener(_webview._event, this, &ofApp::onWebViewEvent);
+  ofAddListener(_webview._domEvent, this, &ofApp::onWebViewDomEvent);
   _webview.setup("example-webview");
   _webview.setHTML(R"xxx(
       <!DOCTYPE html> <html>
@@ -41,10 +42,11 @@ void ofApp::setup()
         <body>
           <input type="range" id="slider" name="slider" min="0" max="1" step="0.01" value="0.5">
           <p>Value: <span id="sliderValue">0.5</span></p>
-          <p><button onclick="buttonCallback()">random bg</button></p>
+          <p><button id="button" onclick="buttonCallback()">random bg</button></p>
           <div>
-            <h5>press e on the of side</h5>
+            <h5>press e on the of side to get a random value generated in oF</h5>
             <p id="from-of"></p>
+            <h5>press d on the of side to register a dom event handler, hover over the button and see the ofLogs</h5>
           </div>
         </body>
       </html>
@@ -67,6 +69,12 @@ void ofApp::keyPressed(int key)
 {
   switch (key)
   {
+  case 'd':
+  {
+    _webview.addDomListener("#button", "mouseenter");
+
+    break;
+  }
   case 'e':
   {
     auto json = ofJson::parse(R"({})");
@@ -139,5 +147,13 @@ void ofApp::onWebViewEvent(ofxChoc::WebView::Event &event)
   if (event.name == "randombg")
   {
     ofBackground(ofRandom(255), ofRandom(255), ofRandom(255));
+  }
+}
+
+void ofApp::onWebViewDomEvent(ofxChoc::WebView::DomEvent &event)
+{
+  if (event.selector == "#button")
+  {
+    ofLogNotice() << "dom event: " << event.selector << " " << event.eventName << " " << event.value.dump(2);
   }
 }

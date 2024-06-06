@@ -13,6 +13,12 @@ namespace ofxChoc
             std::string name;
             ofJson value;
         };
+        struct DomEvent
+        {
+            std::string selector;
+            std::string eventName;
+            ofJson value;
+        };
         WebView() : _window({100, 100, 800, 600})
         {
             choc::ui::WebView::Options opts;
@@ -69,7 +75,15 @@ namespace ofxChoc
         event.name = payload[0];
         event.value = payload[1];
 
-        _event.notify(event);
+        if(event.name == "dom"){
+            DomEvent domEvent;
+            domEvent.eventName = event.value["eventName"].get<std::string>();
+            domEvent.selector = event.value["selector"].get<std::string>();
+            domEvent.value = event.value["event"];
+            _domEvent.notify(domEvent);
+        }else{
+            _event.notify(event);
+        }
 
             return choc::value::createString(message); });
         }
@@ -94,13 +108,23 @@ namespace ofxChoc
             js += ")";
             _webview->evaluateJavascript(js);
         }
-        
+
         choc::ui::WebView *getWebViewPtr()
         {
             return _webview.get();
         }
+        void addDomListener(std::string selector, std::string event)
+        {
+            std::string js = "document.querySelector('";
+            js += selector;
+            js += "').addEventListener('";
+            js += event;
+            js += "', function(e){ window.ofxChoc.notifyEvent('dom', {selector: '" + selector + "', eventName: '" + event + "', event: e}); });";
+            _webview->evaluateJavascript(js);
+        }
         choc::ui::DesktopWindow _window;
         std::unique_ptr<choc::ui::WebView> _webview;
         ofEvent<Event> _event;
+        ofEvent<DomEvent> _domEvent;
     };
 };

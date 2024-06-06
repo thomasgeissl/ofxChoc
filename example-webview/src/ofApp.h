@@ -24,6 +24,7 @@ public:
     void gotMessage(ofMessage msg);
 
     void onWebViewEvent(ofxChoc::WebView::Event &event);
+    void onWebViewDomEvent(ofxChoc::WebView::DomEvent &event);
 
     ofxChoc::WebView _webview;
     float _speed;
