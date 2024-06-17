@@ -27,5 +27,6 @@ public:
 
     ofxChoc::WebServer _server;
     ofxChoc::WebView _webview;
+    ofFbo _fbo;
     float _speed;
 };
