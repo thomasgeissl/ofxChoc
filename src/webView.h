@@ -50,7 +50,6 @@ namespace ofxChoc
         };
         ~WebView()
         {
-            // stopMessageLoop();
         }
         void setup(std::string title = "ofxChoc::WebView")
         {
