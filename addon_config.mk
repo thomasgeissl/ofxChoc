@@ -5,5 +5,8 @@ meta:
 	ADDON_TAGS = "some useful utilities, e.g. a webview class"
 	ADDON_URL = https://github.com/thomasgeissl/ofxChoc
 
-common:
+osx:
 	ADDON_FRAMEWORKS = WebKit
+
+linux64:
+	ADDON_PKG_CONFIG_LIBRARIES = webkit2gtk-4.0

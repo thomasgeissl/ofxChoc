@@ -58,8 +58,7 @@ namespace ofxChoc
             _window.setResizable(true);
             _window.setMinimumSize(300, 300);
             _window.setMaximumSize(1500, 1200);
-            _window.windowClosed = []
-            { choc::messageloop::stop(); };
+            // _window.windowClosed = []{ choc::messageloop::stop(); };
 
             _window.toFront();
 
