@@ -5,3 +5,4 @@
 #include "./fileWatcher.h"
 #include "./utils.h"
 #include "./dialogs.h"
+#include "./jsRuntime.h"
