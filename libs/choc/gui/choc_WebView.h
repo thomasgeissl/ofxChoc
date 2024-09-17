@@ -116,6 +116,11 @@ public:
         /// and the view will navigate to that address when launched.
         /// Leave blank for a default.
         std::string customSchemeURI;
+
+        /// On OSX there's some custom code to intercept copy/paste keys, which
+        /// otherwise wouldn't work by default. This lets you turn that off if you
+        /// need to.
+        bool enableDefaultClipboardKeyShortcutsInSafari = true;
     };
 
     /// Creates a WebView with default options
@@ -457,7 +462,7 @@ struct choc::ui::WebView::Pimpl
 //==============================================================================
 #elif CHOC_APPLE
 
-#include "choc_MessageLoop.h"
+#include "../platform/choc_ObjectiveCHelpers.h"
 
 struct choc::ui::WebView::Pimpl
 {
@@ -469,7 +474,7 @@ struct choc::ui::WebView::Pimpl
 
         defaultURI = getURIHome (*options);
 
-        id config = call<id> (getClass ("WKWebViewConfiguration"), "new");
+        id config = callClass<id> ("WKWebViewConfiguration", "new");
 
         id prefs = call<id> (config, "preferences");
         call<void> (prefs, "setValue:forKey:", getNSNumberBool (true), getNSString ("fullScreenEnabled"));
@@ -489,7 +494,7 @@ struct choc::ui::WebView::Pimpl
         if (options->fetchResource)
             call<void> (config, "setURLSchemeHandler:forURLScheme:", delegate, getNSString (getURIScheme (*options)));
 
-        webview = call<id> (allocateWebview(), "initWithFrame:configuration:", CGRect(), config);
+        webview = call<id> (allocateWebview(), "initWithFrame:configuration:", objc::CGRect(), config);
         objc_setAssociatedObject (webview, "choc_webview", (CHOC_OBJC_CAST_BRIDGED id) this, OBJC_ASSOCIATION_ASSIGN);
 
         if (! options->customUserAgent.empty())
@@ -531,14 +536,14 @@ struct choc::ui::WebView::Pimpl
 
     bool addInitScript (const std::string& script)
     {
-        using namespace choc::objc;
         CHOC_AUTORELEASE_BEGIN
 
-        if (id s = call<id> (call<id> (getClass ("WKUserScript"), "alloc"), "initWithSource:injectionTime:forMainFrameOnly:",
-                                       getNSString (script), WKUserScriptInjectionTimeAtDocumentStart, (BOOL) 1))
+        if (id s = objc::call<id> (objc::callClass<id> ("WKUserScript", "alloc"),
+                                   "initWithSource:injectionTime:forMainFrameOnly:",
+                                   objc::getNSString (script), WKUserScriptInjectionTimeAtDocumentStart, (BOOL) 1))
         {
-            call<void> (manager, "addUserScript:", s);
-            call<void> (s, "release");
+            objc::call<void> (manager, "addUserScript:", s);
+            objc::call<void> (s, "release");
             return true;
         }
 
@@ -551,11 +556,10 @@ struct choc::ui::WebView::Pimpl
         if (url.empty())
             return navigate (defaultURI);
 
-        using namespace choc::objc;
         CHOC_AUTORELEASE_BEGIN
 
-        if (id nsURL = call<id> (getClass ("NSURL"), "URLWithString:", getNSString (url)))
-            return call<id> (webview, "loadRequest:", call<id> (getClass ("NSURLRequest"), "requestWithURL:", nsURL)) != nullptr;
+        if (id nsURL = objc::callClass<id> ("NSURL", "URLWithString:", objc::getNSString (url)))
+            return objc::call<id> (webview, "loadRequest:", objc::callClass<id> ("NSURLRequest", "requestWithURL:", nsURL)) != nullptr;
 
         CHOC_AUTORELEASE_END
         return false;
@@ -610,8 +614,8 @@ struct choc::ui::WebView::Pimpl
     {
         if (value)
         {
-            if (id nsData = objc::call<id> (objc::getClass ("NSJSONSerialization"), "dataWithJSONObject:options:error:",
-                                            value, 12, (id) nullptr))
+            if (id nsData = objc::callClass<id> ("NSJSONSerialization", "dataWithJSONObject:options:error:",
+                                                 value, 12, (id) nullptr))
             {
                 auto data = objc::call<void*> (nsData, "bytes");
                 auto length = objc::call<unsigned long> (nsData, "length");
@@ -661,7 +665,7 @@ private:
 
             auto makeResponse = [&] (auto responseCode, id headerFields)
             {
-                return call<id> (call<id> (call<id> (getClass ("NSHTTPURLResponse"), "alloc"),
+                return call<id> (call<id> (callClass<id> ("NSHTTPURLResponse", "alloc"),
                                            "initWithURL:statusCode:HTTPVersion:headerFields:",
                                            requestUrl,
                                            responseCode,
@@ -680,12 +684,12 @@ private:
                 id headerKeys[]    = { getNSString ("Content-Length"), getNSString ("Content-Type"), getNSString ("Cache-Control"), getNSString ("Access-Control-Allow-Origin") };
                 id headerObjects[] = { getNSString (contentLength),    getNSString (mimeType),       getNSString ("no-store") ,     getNSString ("*") };
 
-                id headerFields = call<id> (getClass ("NSDictionary"), "dictionaryWithObjects:forKeys:count:",
-                                            headerObjects, headerKeys, sizeof (headerObjects) / sizeof (id));
+                id headerFields = callClass<id> ("NSDictionary", "dictionaryWithObjects:forKeys:count:",
+                                                 headerObjects, headerKeys, sizeof (headerObjects) / sizeof (id));
 
                 call<void> (task, "didReceiveResponse:", makeResponse (200, headerFields));
 
-                id data = call<id> (getClass ("NSData"), "dataWithBytes:length:", bytes.data(), bytes.size());
+                id data = callClass<id> ("NSData", "dataWithBytes:length:", bytes.data(), bytes.size());
                 call<void> (task, "didReceiveData:", data);
             }
             else
@@ -697,8 +701,8 @@ private:
         }
         catch (...)
         {
-            id error = call<id> (getClass ("NSError"), "errorWithDomain:code:userInfo:",
-                                 getNSString ("NSURLErrorDomain"), -1, nullptr);
+            id error = callClass<id> ("NSError", "errorWithDomain:code:userInfo:",
+                                      getNSString ("NSURLErrorDomain"), -1, nullptr);
 
             call<void> (task, "didFailWithError:", error);
         }
@@ -715,6 +719,9 @@ private:
 
     BOOL performKeyEquivalent (id self, id e)
     {
+        if (! options->enableDefaultClipboardKeyShortcutsInSafari)
+            return false;
+
         enum
         {
             NSEventTypeKeyDown = 10,
@@ -791,9 +798,10 @@ private:
                             (IMP) (+[](id self, SEL, id e) -> BOOL
                             {
                                 if (auto p = getPimpl (self))
-                                    return p->performKeyEquivalent (self, e);
+                                    if (p->performKeyEquivalent (self, e))
+                                        return true;
 
-                                return false;
+                                return choc::objc::callSuper<BOOL> (self, "performKeyEquivalent:", e);
                             }), "B@:@");
 
             objc_registerClassPair (webviewClass);
@@ -813,14 +821,13 @@ private:
     {
         DelegateClass()
         {
-            using namespace choc::objc;
-            delegateClass = createDelegateClass ("NSObject", "CHOCWebViewDelegate_");
+            delegateClass = objc::createDelegateClass ("NSObject", "CHOCWebViewDelegate_");
 
             class_addMethod (delegateClass, sel_registerName ("userContentController:didReceiveScriptMessage:"),
                              (IMP) (+[](id self, SEL, id, id msg)
                              {
                                  if (auto p = getPimpl (self))
-                                     p->owner.invokeBinding (objc::getString (call<id> (msg, "body")));
+                                     p->owner.invokeBinding (objc::getString (objc::call<id> (msg, "body")));
                              }),
                              "v@:@@");
 
@@ -854,25 +861,25 @@ private:
                              (IMP) (+[](id, SEL, id wkwebview, id params, id /*frame*/, void (^completionHandler)(id))
                              {
                                 CHOC_AUTORELEASE_BEGIN
-                                id panel = call<id> (getClass ("NSOpenPanel"), "openPanel");
+                                id panel = objc::callClass<id> ("NSOpenPanel", "openPanel");
 
-                                auto allowsMultipleSelection = call<BOOL> (params, "allowsMultipleSelection");
-                                id allowedFileExtensions = call<id> (params, "_allowedFileExtensions");
-                                id window = call<id> (wkwebview, "window");
+                                auto allowsMultipleSelection = objc::call<BOOL> (params, "allowsMultipleSelection");
+                                id allowedFileExtensions = objc::call<id> (params, "_allowedFileExtensions");
+                                id window = objc::call<id> (wkwebview, "window");
 
-                                call<void> (panel, "setAllowsMultipleSelection:", allowsMultipleSelection);
-                                call<void> (panel, "setAllowedFileTypes:", allowedFileExtensions);
+                                objc::call<void> (panel, "setAllowsMultipleSelection:", allowsMultipleSelection);
+                                objc::call<void> (panel, "setAllowedFileTypes:", allowedFileExtensions);
 
-                                call<void> (panel, "beginSheetModalForWindow:completionHandler:", window,
-                                            ^(long result)
-                                            {
-                                                CHOC_AUTORELEASE_BEGIN
-                                                if (result == 1) // NSModalResponseOK
-                                                    completionHandler (call<id> (panel, "URLs"));
-                                                else
-                                                    completionHandler (nil);
-                                                CHOC_AUTORELEASE_END
-                                            });
+                                objc::call<void> (panel, "beginSheetModalForWindow:completionHandler:", window,
+                                                  ^(long result)
+                                                  {
+                                                      CHOC_AUTORELEASE_BEGIN
+                                                      if (result == 1) // NSModalResponseOK
+                                                          completionHandler (objc::call<id> (panel, "URLs"));
+                                                      else
+                                                          completionHandler (nil);
+                                                      CHOC_AUTORELEASE_END
+                                                  });
                                 CHOC_AUTORELEASE_END
                              }), "v@:@@@@");
 
@@ -888,18 +895,6 @@ private:
     };
 
     static constexpr long WKUserScriptInjectionTimeAtDocumentStart = 0;
-
-    // Including CodeGraphics.h can create all kinds of messy C/C++ symbol clashes
-    // with other headers, but all we actually need are these coordinate structs:
-   #if defined (__LP64__) && __LP64__
-    using CGFloat = double;
-   #else
-    using CGFloat = float;
-   #endif
-
-    struct CGPoint { CGFloat x = 0, y = 0; };
-    struct CGSize  { CGFloat width = 0, height = 0; };
-    struct CGRect  { CGPoint origin; CGSize size; };
 };
 
 //==============================================================================
@@ -1977,7 +1972,7 @@ inline std::unique_ptr<juce::Component> createJUCEWebViewHolder (choc::ui::WebVi
     {
         Holder (choc::ui::WebView& view)
            #if JUCE_LINUX
-            : juce::XEmbedComponent (getWindowID (view), true, false),
+            : juce::XEmbedComponent (getWindowID (view), true, false)
            #endif
         {
            #if JUCE_MAC || JUCE_IOS
