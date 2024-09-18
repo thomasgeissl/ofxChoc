@@ -15,6 +15,7 @@ namespace ofxChoc
         JsRuntime() 
             : _context(choc::javascript::createQuickJSContext()), 
               _replActive(false), 
+              _gameLoopActive(true),
               _currentInput(""),
               _newInput(false) 
         {
@@ -49,6 +50,12 @@ namespace ofxChoc
             if (_inputThread.joinable()) {
                 _inputThread.join(); 
             }
+        }
+        void startGameLoop(){
+            _gameLoopActive = true;
+        }
+        void stopGameLoop(){
+            _gameLoopActive = false;
         }
 
         bool evaluateFile(std::string path, bool watch = false){
@@ -105,6 +112,20 @@ namespace ofxChoc
                 {
                     std::cerr << "Error: " << e.what() << std::endl;
                 }
+
+                if(_gameLoopActive){
+                    if(_context.evaluateExpression("update")){
+                        _context.run("update");
+                    }
+                }
+            }
+        }
+
+        void draw(){
+            if(_gameLoopActive){
+                if(_context.evaluateExpression("draw")){
+                    _context.run("draw");
+                }
             }
         }
 
@@ -116,6 +137,7 @@ namespace ofxChoc
     // private:
         choc::javascript::Context _context;
         std::atomic<bool> _replActive;
+        bool _gameLoopActive;
         std::string _currentInput; // Stores the input from user until evaluation
         std::atomic<bool> _newInput; // Flag to indicate new input
 
