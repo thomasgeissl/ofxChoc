@@ -5,7 +5,7 @@
 * this addon comes with the following features
     * webview
     * webserver
-    * oF js runtime
+    * oF js runtime (wip)
     * filewatcher
     * non-blocking file and message dialogs
     * ... more to come

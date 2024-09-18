@@ -232,6 +232,22 @@ namespace ofxChoc
                 }
             }
         }
+        void onDragEvent(ofDragInfo dragInfo){
+            if(_gameLoopActive){
+                if(exists("dragEvent")){
+                    std::string expression = "dragEvent("+ofToString(dragInfo.position.x)+", "+ofToString(dragInfo.position.y)+")";
+                    _context.run(expression);
+                }
+            }
+        }
+        void onMessage(ofMessage message){
+            if(_gameLoopActive){
+                if(exists("gotMessage")){
+                    // std::string expression = "gotMessage("+ofToString(message.message)+", "+ofToString(message.arg1)+", "+ofToString(message.arg2)+", "+ofToString(message.arg3)+")";
+                    // _context.run(expression);
+                }
+            }
+        }
 
 
 

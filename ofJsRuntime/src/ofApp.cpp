@@ -83,10 +83,12 @@ void ofApp::windowResized(int w, int h)
 
 void ofApp::dragEvent(ofDragInfo dragInfo)
 {
+  _jsRuntime.onDragEvent(dragInfo);
 }
 
 void ofApp::gotMessage(ofMessage msg)
 {
+  _jsRuntime.onMessage(msg);
 }
 
 void ofApp::onFileWatcherEvent(choc::file::Watcher::Event &event)

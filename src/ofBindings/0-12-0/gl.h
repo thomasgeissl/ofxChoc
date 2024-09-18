@@ -15,11 +15,23 @@ inline void registerOfGlBindings(choc::javascript::Context &context){
         }
         return context.evaluateExpression("undefined");
     });
-
+    context.registerFunction ("_ofxChoc_ofBindings_drawCircle",
+                              [&context] (choc::javascript::ArgumentList args) mutable -> choc::value::Value
+    {
+        ofLogNotice() << "draw cirlce" << args.size();
+        for(auto arg : args){
+            // ofLogNotice() << "arg: " << arg.getType();
+        }
+        if(args.size() == 3){
+            ofDrawCircle(args[0]->getFloat64(), args[1]->getFloat64(), args[2]->getFloat64());
+        }
+        return context.evaluateExpression("undefined");
+    });
     context.run (R"(
 
 ofxChoc_gl = {
-    setColor: function() { return _ofxChoc_ofBindings_setColor() },
+    setColor: function() { return _ofxChoc_ofBindings_setColor(arguments) },
+    drawCircle: function() { return _ofxChoc_ofBindings_drawCircle(arguments) },
 };
 
 )");
