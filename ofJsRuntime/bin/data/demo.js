@@ -11,12 +11,16 @@ function setup() {
 
 function update() {
   // console.log(`js -> update, ${of.getFrameNum()}`);
-  // x = (x + 1) % of.getWidth();
-  // y = (y + 1) % of.getHeight();
+  if(of.getMousePressed(0)){
+    // console.log("mouse pressed");
+  }
+  if(of.getKeyPressed("c".charCodeAt(0))){
+    // console.log("c pressed");
+  }
 }
 
 function draw() {
-  console.log(`js -> draw, ${of.getFrameNum()}`);
+  // console.log(`js -> draw, ${of.getFrameNum()}`);
   const frameNum = of.getFrameNum();
   of.setColor(frameNum % 255, 100, 255);
   of.drawCircle(of.getFrameNum()%of.getWidth(), of.getFrameNum()%of.getHeight(), 30);
@@ -25,6 +29,12 @@ function draw() {
   const mouseY = of.getMouseY();
   of.setColor(0,0,0);
   of.drawCircle(mouseX, mouseY, mouseY/of.getHeight() * 20);
+
+
+  if(of.getKeyPressed('c'.charCodeAt(0))){
+    console.log("draw curve")
+    of.drawCurve(0,0, 100,100,400,400, of.getWidth(), of.getHeight());
+  }
 }
 function exit() {
   console.log("js -> exit");
@@ -32,6 +42,45 @@ function exit() {
 
 function keyPressed(key) {
   console.log(`js -> key pressed - ${key}`);
+
+  switch(key){
+    case 'b'.charCodeAt(0): {
+      of.background(Math.floor(Math.random()*255), 0, 0);
+      break;
+    }
+    case 'f'.charCodeAt(0): {
+      of.toggleFullscreen();
+      break;
+    }
+    case 'u'.charCodeAt(0): {
+      console.log("testing utils")
+      console.log(`frameNum: ${of.getFrameNum()}`);
+      // console.log(`getEnv(USER)${of.getEnv("USER")}`);
+      console.log(`elapsedTimef: ${of.getElapsedTimef()}`);
+      console.log(`elapsedTimeMicros: ${of.getElapsedTimeMicros()}`);
+      console.log(`elapsedTimeMillis: ${of.getElapsedTimeMillis()}`);
+      console.log(`hours: ${of.getHours()}`);
+      console.log(`minutes: ${of.getMinutes()}`);
+      console.log(`seconds: ${of.getSeconds()}`);
+      console.log(`month: ${of.getMonth()}`);
+      // console.log(`versionInfo: ${of.getVersionInfo()}`);
+      // console.log(`versionMajor: ${of.getVersionMajor()}`);
+      // console.log(`versionMinor: ${of.getVersionMinor()}`);
+      // console.log(`versionPatch: ${of.getVersionPatch()}`);
+      // console.log("systemTimeMicros", of.getSystemTimeMicros());
+      // console.log("systemTimeMillis", of.getSystemTimeMillis());
+      // console.log("unixTime", of.getUnixTime());
+      // console.log("weekday", of.getWeekday());
+      break;
+    }
+    // case "t": {
+    //   // TODO: fix timeout, or implement it in js.h
+    //   std.setTimeout(() => {
+    //     console.log("timeout after 5s");
+    //   }, 5000);
+    //   break;
+    // }
+  }
 }
 
 function keyReleased(key) {

@@ -57,7 +57,7 @@ inline void registerOfEventsBindings(choc::javascript::Context &context){
     context.run (R"(
 
 ofxChoc_events = {
-    getKeyPressed: function() { return _ofxChoc_ofBindings_getKeyPressed() },
+    getKeyPressed: function(keyCode) { return _ofxChoc_ofBindings_getKeyPressed(keyCode) },
     getMousePressed: function(button) { return _ofxChoc_ofBindings_getMousePressed(button) },
     getMouseX: function() { return _ofxChoc_ofBindings_getMouseX() },
     getMouseY: function() { return _ofxChoc_ofBindings_getMouseY() },
