@@ -17,17 +17,14 @@ function update() {
 
 function draw() {
   console.log(`js -> draw, ${of.getFrameNum()}`);
-  // const frameNum = of.getFrameNum();
-  // of.setColor(frameNum % 255, 100, 255);
-  // // console.log(`test ${ofGetMouseX()}`);
-  of.setColor(255,0,255);
+  const frameNum = of.getFrameNum();
+  of.setColor(frameNum % 255, 100, 255);
   of.drawCircle(of.getFrameNum()%of.getWidth(), of.getFrameNum()%of.getHeight(), 30);
-  // of.drawRectangle(
-  //   mousePressed ? ofGetMouseX() : frameNum % of.getWidth(),
-  //   mousePressed ? ofGetMouseY() : frameNum % of.getHeight(),
-  //   height,
-  //   height
-  // );
+
+  const mouseX = of.getMouseX();
+  const mouseY = of.getMouseY();
+  of.setColor(0,0,0);
+  of.drawCircle(mouseX, mouseY, mouseY/of.getHeight() * 20);
 }
 function exit() {
   console.log("js -> exit");
