@@ -8,7 +8,7 @@ class ofApp : public ofBaseApp
 
 public:
     ofApp();
-    ofApp(std::filesystem::path path, bool watch = false);
+    ofApp(std::filesystem::path path, bool gameLoopActive = true, bool watch = false);
     void setup();
     void update();
     void draw();

@@ -27,7 +27,7 @@ inline void registerOfApplicationBindings(choc::javascript::Context &context){
 
     context.run (R"(
 
-of = {
+ofxChoc_application = {
     getHeight: function() { return _ofxChoc_ofBindings_getHeight() },
     getWidth: function() { return _ofxChoc_ofBindings_getWidth() },
     toggleFullscreen: function() { return _ofxChoc_ofBindings_toggleFullscreen() },
