@@ -20,7 +20,7 @@ function draw() {
   // const frameNum = of.getFrameNum();
   // of.setColor(frameNum % 255, 100, 255);
   // // console.log(`test ${ofGetMouseX()}`);
-  of.setColor(255,255,255);
+  of.setColor(255,0,255);
   of.drawCircle(of.getFrameNum()%of.getWidth(), of.getFrameNum()%of.getHeight(), 30);
   // of.drawRectangle(
   //   mousePressed ? ofGetMouseX() : frameNum % of.getWidth(),

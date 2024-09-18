@@ -30,8 +30,8 @@ inline void registerOfGlBindings(choc::javascript::Context &context){
     context.run (R"(
 
 ofxChoc_gl = {
-    setColor: function() { return _ofxChoc_ofBindings_setColor(arguments) },
-    drawCircle: function() { return _ofxChoc_ofBindings_drawCircle(arguments) },
+    setColor: function(r,g,b,a=255) { return _ofxChoc_ofBindings_setColor(r,g,b,a) },
+    drawCircle: function(x,y,r) { return _ofxChoc_ofBindings_drawCircle(x,y,r) },
 };
 
 )");
