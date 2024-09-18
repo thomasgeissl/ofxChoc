@@ -1,9 +1,11 @@
 #pragma once
 #include "ofMain.h"
 #include "../libs/choc/javascript/choc_javascript_QuickJS.h"
+#include "../libs/choc/javascript/choc_javascript_Console.h"
 #include <thread>
 #include <atomic>
 #include <string>
+#include "./ofBindings/0-12-0/bindings.h"
 
 namespace ofxChoc
 {
@@ -12,23 +14,25 @@ namespace ofxChoc
     public:
         JsRuntime() 
             : _context(choc::javascript::createQuickJSContext()), 
-              _replActive(true), 
+              _replActive(false), 
               _currentInput(""),
               _newInput(false) 
         {
+            choc::javascript::registerConsoleFunctions(_context);
+            registerOfBindings(_context);
         }
 
         ~JsRuntime()
         {
-            _replActive = false;
-            if (_inputThread.joinable()) {
-                _inputThread.join(); // Wait for the input thread to finish
-            }
+            stopRepl();
         }
 
         void setup()
         {
-            // Start the input thread for reading console input
+        }
+
+        void startRepl(){
+            _replActive = true;
             _inputThread = std::thread([this]() {
                 while (_replActive) {
                     std::string input;
@@ -40,12 +44,11 @@ namespace ofxChoc
                 }
             });
         }
-
-        void startRepl(){
-            _replActive = true;
-        }
         void stopRepl(){
             _replActive = false;
+            if (_inputThread.joinable()) {
+                _inputThread.join(); 
+            }
         }
 
         bool evaluateFile(std::string path, bool watch = false){
@@ -95,6 +98,7 @@ namespace ofxChoc
                         else if(result.isInt64()){
                             std::cout << result.getInt64() << std::endl;
                         }
+
                     }
                 }
                 catch (const std::exception &e)

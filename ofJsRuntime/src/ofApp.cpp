@@ -6,7 +6,7 @@ ofApp::ofApp()
 void ofApp::setup()
 {
   _jsRuntime.setup();
-  // ofLogNotice() << _jsRuntime._context.evaluateExpression("1+2").getInt64();
+  _jsRuntime.startRepl();
 }
 
 void ofApp::update()
