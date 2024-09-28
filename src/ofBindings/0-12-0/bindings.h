@@ -6,14 +6,15 @@
 #include "./graphics.h"
 #include "./events.h"
 
-inline void registerOfBindings(choc::javascript::Context &context){
+inline void registerOfBindings(choc::javascript::Context &context)
+{
     registerOfApplicationBindings(context);
     registerOfUtilsBindings(context);
     registerOfGlBindings(context);
     registerOfEventsBindings(context);
     registerOfGraphicsBindings(context);
 
-    context.run (R"(
+    context.run(R"(
 
 of = {
     ...ofxChoc_application,
@@ -26,3 +27,17 @@ of = {
     )");
 }
 
+inline void registerOfBindings(choc::ui::WebView *webview)
+{
+    registerOfEventsBindings(webview);
+
+    webview->evaluateJavascript(R"(
+of = {
+    // ...ofxChoc_application,
+    // ...ofxChoc_utils,
+    // ...ofxChoc_gl,
+    // ...ofxChoc_graphics,
+    ...ofxChoc_events,
+};
+    )");
+}

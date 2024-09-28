@@ -2,6 +2,7 @@
 #include "ofMain.h"
 #include "../libs/choc/gui/choc_WebView.h"
 #include "../libs/choc/gui/choc_DesktopWindow.h"
+#include "./ofBindings/0-12-0/bindings.h"
 
 namespace ofxChoc
 {
@@ -51,7 +52,7 @@ namespace ofxChoc
         ~WebView()
         {
         }
-        void setup(std::string title = "ofxChoc::WebView")
+        void setup(std::string title = "ofxChoc::WebView", bool registerOfFunctionBindings = false)
         {
             choc::ui::setWindowsDPIAwareness();
             _window.setWindowTitle(title);
@@ -84,6 +85,10 @@ namespace ofxChoc
         }
 
             return choc::value::createString(message); });
+
+            if(registerOfFunctionBindings){
+                registerOfBindings(getWebViewPtr());
+            }
         }
 
         void update()
