@@ -7,149 +7,137 @@
 #include <iostream>
 #include <typeinfo>
 #include "../libs/choc/javascript/choc_javascript_QuickJS.h"
-#include "../libs/choc/gui/choc_WebView.h"
-
-
-// Forward declaration of convertArg for ArgumentList
-template <typename ArgType>
-ArgType convertArg(const choc::javascript::ArgumentList &args, size_t index, const std::string &argType);
-
-template <typename... Args, std::size_t... Is>
-std::tuple<Args...> createTupleFromArgs(const choc::javascript::ArgumentList &args, 
-                                         const std::vector<std::string> &argTypes, 
-                                         std::index_sequence<Is...>);
-
-// Function to convert args from ArgumentList to a tuple
-template<typename... Args>
-std::tuple<Args...> convertArgsToTuple(const choc::javascript::ArgumentList &args, const std::vector<std::string> &argTypes)
-{
-    if (args.size() == 0) {
-        return std::make_tuple(); // Empty tuple for no arguments
-    }
-
-    // Ensure we have enough arguments for the provided types
-    if (args.size() != sizeof...(Args)) {
-        throw std::invalid_argument("Number of arguments does not match the expected number");
-    }
-
-    // Create tuple using index sequence to unpack Args...
-    return createTupleFromArgs<Args...>(args, argTypes, std::index_sequence_for<Args...>{});
-}
-
-// Create tuple from arguments using index sequence
-template <typename... Args, std::size_t... Is>
-std::tuple<Args...> createTupleFromArgs(const choc::javascript::ArgumentList &args, 
-                                         const std::vector<std::string> &argTypes, 
-                                         std::index_sequence<Is...>)
-{
-    return std::make_tuple(convertArg<Args>(args, static_cast<uint32_t>(Is), argTypes[Is])...);
-}
+#include "./functionTraits.h"
 
 // Helper function to convert choc::javascript::ArgumentList item to the correct argument type
 template <typename ArgType>
-ArgType convertArg(const choc::javascript::ArgumentList &args, size_t index, const std::string &argType)
+ArgType convertArg(const choc::javascript::ArgumentList &args, size_t index)
 {
-    if constexpr (std::is_same_v<ArgType, float>) {
+    // Implement the conversion logic based on your requirements
+    // This is just an example; adjust based on your actual argument handling
+    if constexpr (std::is_same_v<ArgType, float>)
+    {
         return static_cast<float>(args[index]->getFloat64());
-    } else if constexpr (std::is_same_v<ArgType, int>) {
-        return args[index]->getInt64();
-    } else if constexpr (std::is_same_v<ArgType, std::string>) {
-        return args[index]->getString();
-    } else if constexpr (std::is_same_v<ArgType, bool>) {
-        return args[index]->getBool(); 
     }
+    else if constexpr (std::is_same_v<ArgType, int>)
+    {
+        return args[index]->getInt64();
+    }
+    else if constexpr (std::is_same_v<ArgType, std::string>)
+    {
+        return args[index]->getString();
+    }
+    else if constexpr (std::is_same_v<ArgType, bool>)
+    {
+        return args[index]->getBool();
+    }
+    ofLogNotice() << "no match";
     // Add more conversions as needed
     throw std::invalid_argument("Unsupported argument type");
 }
 
-// template <typename Func, typename... Args>
-// void bindFunction(choc::javascript::Context &context, 
-//                   const std::string &bindingName, 
-//                   const std::vector<std::string> &argTypes, 
-//                   const std::string &returnType, 
-//                   Func func)
-// {
-//     ofLogNotice() << "registering " << bindingName << " with return type " << returnType << " and args ";
-
-//     // Register the function with the QuickJS context
-//     context.registerFunction(bindingName,
-//         [argTypes, returnType, func](choc::javascript::ArgumentList args) mutable -> choc::value::Value
-//         {
-//             if (args.size() != argTypes.size()) {
-//                 return choc::value::Value(); // Return undefined or empty value for mismatched args
-//             }
-//             ofLogNotice() << "calling function with " <<returnType;
-
-//             // Convert arguments to a tuple for easier handling
-//             auto argTuple = convertArgsToTuple<Args...>(args, argTypes);
-//             auto hasArgs = true;      
-//             if constexpr (std::tuple_size<decltype(argTuple)>::value == 0){
-//                 hasArgs = false;
-//             }
-
-
-//             ofLogNotice() << " and hasArgs = " << hasArgs;
-
-
-
-//             if (returnType == "int") {
-//                 if(hasArgs){
-//                     return choc::value::createInt64(std::apply(func, argTuple));
-//                 }else{
-//                     return choc::value::createInt64(func());
-//                 }
-//             }
-//             // Handle return type
-//             // if (returnType == "bool") {
-//             //     return choc::value::createBool(std::apply(func, argTuple));
-//             // } else if (returnType == "int") {
-//             //     return choc::value::createInt64(std::apply(func, argTuple));
-//             // } else if (returnType == "float") {
-//             //     return choc::value::createFloat64(std::apply(func, argTuple));
-//             // } else if (returnType == "string") {
-//             //     return choc::value::createString(std::apply(func, argTuple));
-//             // } else if (returnType == "void") {
-//             //     std::apply(func, argTuple);
-//             //     return choc::value::Value(); // Return undefined for void functions
-//             // }
-
-//             // return choc::value::createInt64(std::apply(func, argTuple));
-//             return choc::value::Value(); // Return undefined for unsupported types
-//         }
-//     );
-// }
-
-
+// Helper to convert argument list to tuple
+template <typename Tuple, std::size_t... I>
+Tuple convertArgsToTupleImpl(const choc::javascript::ArgumentList &args, std::index_sequence<I...>)
+{
+    if constexpr (sizeof...(I) == 0)
+    {
+        // Return empty tuple if no arguments
+        return std::tuple<>();
+    }
+    else
+    {
+        return std::make_tuple(convertArg<typename std::tuple_element<I, Tuple>::type>(args, I)...);
+    }
+}
+// Main conversion function that deduces the argument types
+template <typename... Args>
+std::tuple<Args...> convertArgsToTuple(const choc::javascript::ArgumentList &args)
+{
+    return convertArgsToTupleImpl<std::tuple<Args...>>(args, std::index_sequence_for<Args...>{});
+}
 
 template <typename Func, typename... Args>
-void bindFunction(choc::javascript::Context &context, 
-                  const std::string &bindingName, 
-                  const std::vector<std::string> &argTypes, 
+void bindFunction(choc::javascript::Context &context,
+                  const std::string &bindingName,
                   Func func)
 {
+    ofLogNotice() << "Binding function: " << bindingName;
+
     context.registerFunction(bindingName,
-        [argTypes, func](choc::javascript::ArgumentList args) mutable -> choc::value::Value
-        {
-            auto argTuple = convertArgsToTuple<Args...>(args, argTypes);
+                             [func](choc::javascript::ArgumentList args) mutable -> choc::value::Value
+                             {
+                                 ofLogNotice() << "Function invoked with args size: " << args.size();
 
-            if constexpr (std::is_invocable_v<Func, Args...>) {
-                // Call the function with arguments and deduce return type
-                using ReturnType = std::invoke_result_t<Func, Args...>;
+                                 using ArgsTuple = typename function_traits<Func>::argument_types;
 
-                if constexpr (std::is_same_v<ReturnType, int>) {
-                    return choc::value::createInt64(std::apply(func, argTuple));
-                } else if constexpr (std::is_same_v<ReturnType, float>) {
-                    return choc::value::createFloat64(std::apply(func, argTuple));
-                } else if constexpr (std::is_same_v<ReturnType, bool>) {
-                    return choc::value::createBool(std::apply(func, argTuple));
-                } else if constexpr (std::is_same_v<ReturnType, std::string>) {
-                    return choc::value::createString(std::apply(func, argTuple));
-                } else {
-                    return choc::value::Value(); // Return undefined for unsupported types
-                }
-            }
+                                 // Convert args to a tuple, but only if there are any expected arguments
+                                 ofLogNotice() << "Converting arguments to tuple";
+                                 auto argTuple = (args.size() > 0) ? convertArgsToTuple<ArgsTuple>(args) : std::tuple<>();
 
-            return choc::value::Value(); // In case function is not invocable
-        }
-    );
+                                 // Check for no arguments case
+                                 if constexpr (std::tuple_size<ArgsTuple>::value == 0)
+                                 {
+                                     ofLogNotice() << "No args to pass";
+                                     // Call the function with no argume
+                                     if constexpr (std::is_invocable_v<Func>)
+                                     {
+                                         using ReturnType = std::invoke_result_t<Func, Args...>;
+                                         if constexpr (std::is_same_v<ReturnType, int>)
+                                         {
+                                             return choc::value::createInt64(func());
+                                         }
+                                         else if constexpr (std::is_same_v<ReturnType, float>)
+                                         {
+                                             return choc::value::createFloat64(func());
+                                         }
+                                         else if constexpr (std::is_same_v<ReturnType, bool>)
+                                         {
+                                             return choc::value::createBool(func());
+                                         }
+                                         else if constexpr (std::is_same_v<ReturnType, std::string>)
+                                         {
+                                             return choc::value::createString(func());
+                                         }
+                                         else
+                                         {
+                                             return choc::value::Value(); // Return undefined for unsupported types
+                                         }
+                                     }
+                                 }
+                                 else
+                                 {
+                                     ofLogNotice() << "Has args to pass";
+                                     // Check if the function can be called with the provided arguments
+                                     if constexpr (std::is_invocable_v<Func, Args...>)
+                                     {
+                                         ofLogNotice() << "Invoking function with arguments";
+                                         using ReturnType = std::invoke_result_t<Func, Args...>;
+
+                                         if constexpr (std::is_same_v<ReturnType, int>)
+                                         {
+                                             return choc::value::createInt64(std::apply(func, argTuple));
+                                         }
+                                         else if constexpr (std::is_same_v<ReturnType, float>)
+                                         {
+                                             return choc::value::createFloat64(std::apply(func, argTuple));
+                                         }
+                                         else if constexpr (std::is_same_v<ReturnType, bool>)
+                                         {
+                                             return choc::value::createBool(std::apply(func, argTuple));
+                                         }
+                                         else if constexpr (std::is_same_v<ReturnType, std::string>)
+                                         {
+                                             return choc::value::createString(std::apply(func, argTuple));
+                                         }
+                                         else
+                                         {
+                                             return choc::value::Value(); // Return undefined for unsupported types
+                                         }
+                                     }
+                                 }
+
+                                 ofLogNotice() << "Function not invocable with given args";
+                                 return choc::value::Value(); // Return undefined if the function is not invocable
+                             });
 }

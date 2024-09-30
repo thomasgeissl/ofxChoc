@@ -13,6 +13,7 @@ inline auto getKeyPressedLambda = [](int key) -> bool {
     return ofGetKeyPressed(key);
 };
 inline auto getMouseXLambda = []() -> int {
+    ofLogNotice() << "get moude x";
     return ofGetMouseX();
 };
 inline auto getMouseYLambda = []() -> int {
@@ -85,8 +86,8 @@ inline void registerOfEventsBindings(choc::javascript::Context &context)
     //                          });
 // bindFunction(context, "_ofxChoc_ofBindings_getKeyPressed", {"int"}, "bool", getKeyPressedLambda);
 // bindFunction(context, "_ofxChoc_ofBindings_getKeyPressed", {}, getKeyPressedLambda);
-bindFunction(context, "_ofxChoc_ofBindings_getMouseX", {}, getMouseXLambda);
-bindFunction(context, "_ofxChoc_ofBindings_getMouseY", {}, getMouseXLambda);
+bindFunction(context, "_ofxChoc_ofBindings_getMouseX", getMouseXLambda);
+bindFunction(context, "_ofxChoc_ofBindings_getMouseY", getMouseXLambda);
 
 
     context.registerFunction("_ofxChoc_ofBindings_getPreviousMouseX",
@@ -114,13 +115,13 @@ bindFunction(context, "_ofxChoc_ofBindings_getMouseY", {}, getMouseXLambda);
     context.run(R"(
 
 ofxChoc_events = {
-    getKeyPressed: function(keyCode) { return _ofxChoc_ofBindings_getKeyPressed(keyCode) },
-    getMousePressed: function(button) { return _ofxChoc_ofBindings_getMousePressed(button) },
+    // getKeyPressed: function(keyCode) { return _ofxChoc_ofBindings_getKeyPressed(keyCode) },
+    // getMousePressed: function(button) { return _ofxChoc_ofBindings_getMousePressed(button) },
     getMouseX: function() { return _ofxChoc_ofBindings_getMouseX() },
     getMouseY: function() { return _ofxChoc_ofBindings_getMouseY() },
-    getPreviousMouseX: function() { return _ofxChoc_ofBindings_getPreviousMouseX() },
-    getPreviousMouseY: function() { return _ofxChoc_ofBindings_getPreviousMouseY() },
-    sendMessage: function(message) { return _ofxChoc_ofBindings_sendMessage(message) },
+    // getPreviousMouseX: function() { return _ofxChoc_ofBindings_getPreviousMouseX() },
+    // getPreviousMouseY: function() { return _ofxChoc_ofBindings_getPreviousMouseY() },
+    // sendMessage: function(message) { return _ofxChoc_ofBindings_sendMessage(message) },
 };
 
 )");
