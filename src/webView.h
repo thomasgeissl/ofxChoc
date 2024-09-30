@@ -27,6 +27,7 @@ namespace ofxChoc
             _webview = std::make_unique<choc::ui::WebView>(opts);
             _webview->addInitScript(
                 R"xxx(
+                
     window.___ofxChoc2Js = function(event, value) {
         if (ofxChoc.listeners[event]) {
             for(var i = 0; i < ofxChoc.listeners[event].length; i++){
