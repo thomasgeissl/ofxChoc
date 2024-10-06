@@ -9,11 +9,11 @@
 #include "../../libs/choc/javascript/choc_javascript_QuickJS.h"
 
 
-inline auto getKeyPressedLambda = [](int key) -> bool {
-    return ofGetKeyPressed(key);
+inline auto getKeyPressedLambda = [](bool key) -> bool {
+    ofLogNotice() << "get key pressed " << key;
+    return ofGetKeyPressed(99);
 };
 inline auto getMouseXLambda = []() -> int {
-    ofLogNotice() << "get moude x";
     return ofGetMouseX();
 };
 inline auto getMouseYLambda = []() -> int {
@@ -86,6 +86,7 @@ inline void registerOfEventsBindings(choc::javascript::Context &context)
     //                          });
 // bindFunction(context, "_ofxChoc_ofBindings_getKeyPressed", {"int"}, "bool", getKeyPressedLambda);
 // bindFunction(context, "_ofxChoc_ofBindings_getKeyPressed", {}, getKeyPressedLambda);
+bindFunction(context, "_ofxChoc_ofBindings_getKeyPressed", getKeyPressedLambda);
 bindFunction(context, "_ofxChoc_ofBindings_getMouseX", getMouseXLambda);
 bindFunction(context, "_ofxChoc_ofBindings_getMouseY", getMouseXLambda);
 
@@ -109,13 +110,13 @@ bindFunction(context, "_ofxChoc_ofBindings_getMouseY", getMouseXLambda);
                                      message = args[0]->getString();
                                  }
                                  ofSendMessage(message);
-                                 return context.evaluateExpression("undefined");
+                                 return choc::value::Value();
                              });
 
     context.run(R"(
 
 ofxChoc_events = {
-    // getKeyPressed: function(keyCode) { return _ofxChoc_ofBindings_getKeyPressed(keyCode) },
+    getKeyPressed: function(keyCode) { return _ofxChoc_ofBindings_getKeyPressed(keyCode) },
     // getMousePressed: function(button) { return _ofxChoc_ofBindings_getMousePressed(button) },
     getMouseX: function() { return _ofxChoc_ofBindings_getMouseX() },
     getMouseY: function() { return _ofxChoc_ofBindings_getMouseY() },

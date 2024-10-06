@@ -5,7 +5,7 @@ void ofApp::setup()
   _speed = 0.5;
   ofAddListener(_webview._event, this, &ofApp::onWebViewEvent);
   ofAddListener(_webview._domEvent, this, &ofApp::onWebViewDomEvent);
-  _webview.setup("example-webview");
+  _webview.setup("example-webview", true); //register oF function bindings
   _webview.setHTML(R"xxx(
       <!DOCTYPE html> <html>
         <head> <title>ofxChoc::example-webview</title> </head>
