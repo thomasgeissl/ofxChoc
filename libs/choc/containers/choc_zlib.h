@@ -46,14 +46,13 @@ public:
         gzip
     };
 
-    InflaterStream (std::shared_ptr<std::istream> compressedData,
-                    FormatType);
-
-    ~InflaterStream() override;
-
-    using pos_type = std::streambuf::pos_type;
-    using off_type = std::streambuf::off_type;
+    using pos_type  = std::streambuf::pos_type;
+    using off_type  = std::streambuf::off_type;
     using char_type = std::streambuf::char_type;
+
+    InflaterStream (std::shared_ptr<std::istream>, FormatType);
+    InflaterStream (std::shared_ptr<std::istream>, FormatType, off_type knownUncompressedSize);
+    ~InflaterStream() override;
 
 private:
     struct Pimpl;
@@ -82,13 +81,11 @@ public:
         defaultLevel  = -1
     };
 
-    DeflaterStream (std::shared_ptr<std::ostream> destData,
-                    CompressionLevel compressionLevel,
-                    int windowBits);
+    DeflaterStream (std::shared_ptr<std::ostream>, CompressionLevel, int windowBits);
     ~DeflaterStream() override;
 
-    using pos_type = std::streambuf::pos_type;
-    using off_type = std::streambuf::off_type;
+    using pos_type  = std::streambuf::pos_type;
+    using off_type  = std::streambuf::off_type;
     using char_type = std::streambuf::char_type;
 
 private:
@@ -96,6 +93,7 @@ private:
     std::unique_ptr<Pimpl> pimpl;
 
     int overflow (int) override;
+    std::streamsize xsputn (const char_type* s, std::streamsize n) override;
 };
 
 
@@ -120,7 +118,7 @@ struct zlib
 // I even started trying to improve some of the appalling variable names,
 // but honestly, life's too short..
 
-CHOC_REGISTER_OPEN_SOURCE_LICENCE (QuickJS, R"(
+CHOC_REGISTER_OPEN_SOURCE_LICENCE (ZLIB, R"(
 ==============================================================================
 ZLIB License:
 
@@ -910,13 +908,15 @@ private:
                 /* strstart == 0 is possible when wraparound on 16-bit machine */
                 s->lookahead = (uint32_t) (s->strstart - max_start);
                 s->strstart = (uint32_t) max_start;
-                s->flushBlock (0);
+                if (! s->flushBlock (false))
+                    return BlockStatus::need_more;  // Output buffer full, need to flush
             }
             /* Flush if we may have to slide, otherwise block_start may become
             * negative and the data will be gone:
             */
             if (s->strstart - (uint32_t) s->block_start >= s->MAX_DIST())
-                s->flushBlock (0);
+                if (! s->flushBlock (false))
+                    return BlockStatus::need_more;  // Output buffer full, need to flush
         }
         s->flushBlock (flush == FlushState::Z_FINISH);
         return flush == FlushState::Z_FINISH ? BlockStatus::finish_done
@@ -1498,7 +1498,7 @@ private:
         last_lit = 0;
     }
 
-    void flushBlock (bool eof)
+    bool flushBlock (bool eof)
     {
         flushCurrentBlock (block_start >= 0 ? (uint8_t*) &window[(uint32_t) block_start]
                                             : (uint8_t*) nullptr,
@@ -1506,6 +1506,7 @@ private:
                            eof);
         block_start = (long) strstart;
         flushPending();
+        return pending == 0;  // Return true if all data was flushed
     }
 
     void initialiseTrees()
@@ -3805,12 +3806,23 @@ struct InflaterStream::Pimpl
     std::vector<char_type> buffer, decompressed;
     off_type decompressedPosition = {};
     size_t decompressedSize = 0;
+    off_type knownUncompressedSize = -1;
 };
 
 inline InflaterStream::InflaterStream (std::shared_ptr<std::istream> source, FormatType format)
-   : std::istream (this),
+   : std::istream (nullptr),
      pimpl (std::make_unique<Pimpl> (std::move (source), format))
 {
+    rdbuf (this);
+}
+
+inline InflaterStream::InflaterStream (std::shared_ptr<std::istream> source, FormatType format,
+                                       off_type uncompressedSize)
+   : std::istream (nullptr),
+     pimpl (std::make_unique<Pimpl> (std::move (source), format))
+{
+    pimpl->knownUncompressedSize = uncompressedSize;
+    rdbuf (this);
 }
 
 inline InflaterStream::~InflaterStream() = default;
@@ -3821,7 +3833,17 @@ inline InflaterStream::pos_type InflaterStream::seekoff (off_type off, std::ios_
         return getPosition();
 
     if (dir == std::ios_base::end)
-        return pos_type (off_type (-1));
+    {
+        if (pimpl->knownUncompressedSize < 0)
+            return pos_type (off_type (-1));
+
+        auto target = pimpl->knownUncompressedSize + off;
+
+        if (target < 0)
+            return pos_type (off_type (-1));
+
+        return seekpos (static_cast<pos_type> (target), mode);
+    }
 
     return seekpos (dir == std::ios_base::cur ? static_cast<pos_type> (getPosition() + off)
                                               : static_cast<pos_type> (off), mode);
@@ -3829,6 +3851,16 @@ inline InflaterStream::pos_type InflaterStream::seekoff (off_type off, std::ios_
 
 inline InflaterStream::pos_type InflaterStream::seekpos (pos_type newPosition, std::ios_base::openmode)
 {
+    if (pimpl->knownUncompressedSize >= 0
+         && static_cast<off_type> (newPosition) >= pimpl->knownUncompressedSize)
+    {
+        pimpl->deleteStream();
+        pimpl->decompressedPosition = pimpl->knownUncompressedSize;
+        setg ({}, {}, {});
+        clear();
+        return newPosition;
+    }
+
     auto currentPos = getPosition();
 
     if (newPosition < currentPos)
@@ -3880,7 +3912,10 @@ inline std::streambuf::int_type InflaterStream::underflow()
 
 inline InflaterStream::pos_type InflaterStream::getPosition() const
 {
-    return gptr() != nullptr ? pimpl->decompressedPosition + (gptr() - eback()) : 0;
+    if (gptr() != nullptr)
+        return pimpl->decompressedPosition + (gptr() - eback());
+
+    return static_cast<pos_type> (pimpl->decompressedPosition);
 }
 
 //==============================================================================
@@ -3892,7 +3927,7 @@ struct DeflaterStream::Pimpl
        : dest (std::move (d)),
          compressionLevel (comp >= 0 && comp <= 10 ? comp : 6)
     {
-        if (windowBits <= 0)
+        if (windowBits == 0)
             windowBits = zlib::MAX_WBITS;
 
         streamIsValid = (deflateStream.initialise (compressionLevel, zlib::Z_DEFLATED,
@@ -3981,14 +4016,21 @@ struct DeflaterStream::Pimpl
 };
 
 inline DeflaterStream::DeflaterStream (std::shared_ptr<std::ostream> d, CompressionLevel c, int w)
-    : std::ostream (this),
+    : std::ostream (nullptr),
       pimpl (std::make_unique<Pimpl> (std::move (d), c, w))
-{}
+{
+    rdbuf (this);
+}
 
 inline DeflaterStream::~DeflaterStream() = default;
 
 inline int DeflaterStream::overflow (int c) { return pimpl->overflow (c); }
 
+inline std::streamsize DeflaterStream::xsputn (const char_type* s, std::streamsize n)
+{
+    return pimpl->write (reinterpret_cast<const uint8_t*> (s),
+                         static_cast<size_t> (n)) ? n : 0;
+}
 
 } // namespace choc::gzip
 

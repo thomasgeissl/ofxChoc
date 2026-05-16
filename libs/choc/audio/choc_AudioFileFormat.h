@@ -21,6 +21,7 @@
 
 #include <vector>
 #include <fstream>
+#include <filesystem>
 #include "choc_SampleBuffers.h"
 #include "choc_SincInterpolator.h"
 #include "../text/choc_StringUtilities.h"
@@ -229,10 +230,10 @@ public:
                                                            AudioFileProperties properties) = 0;
 
     /// Helper function that tries to create a reader for a file
-    std::unique_ptr<AudioFileReader> createReader (const std::string& filePath);
+    std::unique_ptr<AudioFileReader> createReader (const std::filesystem::path& filePath);
 
     /// Helper function that tries to create a writer that will overwrite a file
-    std::unique_ptr<AudioFileWriter> createWriter (const std::string& filePath,
+    std::unique_ptr<AudioFileWriter> createWriter (const std::filesystem::path& filePath,
                                                    AudioFileProperties properties);
 };
 
@@ -272,7 +273,7 @@ struct AudioFileFormatList
 
     /// Searches for the first format in this list that can load a file
     /// from the given filename. If none of them can read it, returns nullptr.
-    std::unique_ptr<AudioFileReader> createReader (const std::string& filePath) const;
+    std::unique_ptr<AudioFileReader> createReader (const std::filesystem::path& filePath) const;
 
     /// Attempts to load the contents of an audio file into a buffer, optionally
     /// resampling the data to match a target sample rate.
@@ -438,12 +439,12 @@ inline bool AudioFileFormat::filenameSuffixMatches (std::string_view filename)
     return false;
 }
 
-inline std::unique_ptr<AudioFileReader> AudioFileFormat::createReader (const std::string& p)
+inline std::unique_ptr<AudioFileReader> AudioFileFormat::createReader (const std::filesystem::path& p)
 {
     return createReader (std::make_shared<std::ifstream> (p, std::ios::binary | std::ios::in));
 }
 
-inline std::unique_ptr<AudioFileWriter> AudioFileFormat::createWriter (const std::string& file, AudioFileProperties p)
+inline std::unique_ptr<AudioFileWriter> AudioFileFormat::createWriter (const std::filesystem::path& file, AudioFileProperties p)
 {
     return createWriter (std::make_shared<std::ofstream> (file, std::ios::binary | std::ios::out | std::ios::trunc), std::move (p));
 }
@@ -455,7 +456,7 @@ choc::buffer::ChannelArrayBuffer<SampleType> AudioFileReader::readEntireStream()
 
     if (static_cast<choc::buffer::FrameCount> (props.numFrames) == props.numFrames)
     {
-        choc::buffer::ChannelArrayBuffer<SampleType> buffer (props.numChannels, static_cast<choc::buffer::FrameCount> (props.numFrames));
+        choc::buffer::ChannelArrayBuffer<SampleType> buffer (props.numChannels, static_cast<choc::buffer::FrameCount> (props.numFrames), false);
 
         if (readFrames (0, buffer))
             return buffer;
@@ -500,7 +501,7 @@ inline uint64_t copyAudioData (AudioFileWriter& dest, AudioFileReader& source, u
 
     auto& readerProperties = source.getProperties();
     auto framesToDo = maxNumFramesToCopy != 0 ? std::min (maxNumFramesToCopy, readerProperties.numFrames) : readerProperties.numFrames;
-    auto tempBuffer = choc::buffer::ChannelArrayBuffer<double> (readerProperties.numChannels, bufferSize);
+    auto tempBuffer = choc::buffer::ChannelArrayBuffer<double> (readerProperties.numChannels, bufferSize, false);
     uint64_t readIndex = 0;
 
     while (framesToDo != 0)
@@ -548,7 +549,7 @@ inline std::unique_ptr<AudioFileReader> AudioFileFormatList::createReader (std::
     return {};
 }
 
-inline std::unique_ptr<AudioFileReader> AudioFileFormatList::createReader (const std::string& p) const
+inline std::unique_ptr<AudioFileReader> AudioFileFormatList::createReader (const std::filesystem::path& p) const
 {
     return createReader (std::make_shared<std::ifstream> (p, std::ios::binary | std::ios::in));
 }
@@ -571,7 +572,7 @@ inline void AudioFileData::resample (double targetSampleRate, uint64_t maxNumFra
         if (newFrameCount != frames.getNumFrames())
         {
             using BufferType = decltype (frames);
-            BufferType resampled (frames.getNumChannels(), static_cast<uint32_t> (newFrameCount));
+            BufferType resampled (frames.getNumChannels(), static_cast<uint32_t> (newFrameCount), false);
             choc::interpolation::sincInterpolate<BufferType&, BufferType, 10> (resampled, frames);
             frames = std::move (resampled);
             sampleRate = targetSampleRate;

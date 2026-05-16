@@ -5,6 +5,9 @@ meta:
 	ADDON_TAGS = "some useful utilities, e.g. a webview class"
 	ADDON_URL = https://github.com/thomasgeissl/ofxChoc
 
+common:
+	ADDON_SOURCES_EXCLUDE = libs/choc/audio/io/rtaudio/%
+
 osx:
 	ADDON_FRAMEWORKS = WebKit
 

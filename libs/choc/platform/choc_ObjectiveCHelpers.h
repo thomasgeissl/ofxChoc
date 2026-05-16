@@ -19,7 +19,7 @@
 #ifndef CHOC_OBJC_HELPERS_HEADER_INCLUDED
 #define CHOC_OBJC_HELPERS_HEADER_INCLUDED
 
-#include "../platform/choc_Platform.h"
+#include "choc_Platform.h"
 
 #if CHOC_APPLE
 
@@ -28,7 +28,7 @@
 #include <objc/message.h>
 #include <type_traits>
 
-#include "../platform/choc_Assert.h"
+#include "choc_Assert.h"
 
 
 //==============================================================================
@@ -141,9 +141,9 @@ namespace choc::objc
 
     //==============================================================================
     /// Converts an NSString to a std::string
-    inline std::string getString (id nsString)      { return std::string (call<const char*> (nsString, "UTF8String")); }
+    inline std::string getString (id nsString)      { if (nsString) return std::string (call<const char*> (nsString, "UTF8String")); return {}; }
     /// Converts a raw UTF8 string to an NSString
-    inline id getNSString (const char* s)           { return callClass<id> ("NSString", "stringWithUTF8String:", s); }
+    inline id getNSString (const char* s)           { return callClass<id> ("NSString", "stringWithUTF8String:", s != nullptr ? s : ""); }
     /// Converts a UTF8 std::string to an NSString
     inline id getNSString (const std::string& s)    { return getNSString (s.c_str()); }
 

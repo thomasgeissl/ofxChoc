@@ -72,6 +72,11 @@
  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
  #pragma GCC diagnostic ignored "-Wuse-after-free"
  #pragma GCC diagnostic ignored "-Warray-bounds"
+ #pragma GCC diagnostic ignored "-Wvolatile"
+ #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+ #pragma GCC diagnostic ignored "-Wfloat-equal"
+ #pragma GCC diagnostic ignored "-Wpedantic"
+ #pragma GCC diagnostic ignored "-Wvla"
  #ifndef __MINGW32__
   #pragma GCC diagnostic ignored "-Wredundant-move"
  #endif
@@ -80,6 +85,7 @@
  #pragma warning (disable: 2440)
  #pragma warning (disable: 2664)
  #pragma warning (disable: 4244)
+ #pragma warning (disable: 4245)
  #pragma warning (disable: 4701)
  #pragma warning (disable: 4702)
  #pragma warning (disable: 4706)
@@ -94,5 +100,7 @@
  #pragma warning (disable: 6340)
  #pragma warning (disable: 6385)
  #pragma warning (disable: 6386)
+ #pragma warning (disable: 26437)
+ #pragma warning (disable: 26816)
  #pragma warning (disable: 28182)
 #endif

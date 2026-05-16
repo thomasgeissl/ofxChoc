@@ -51,6 +51,7 @@
 #include <time.h>
 #include <fenv.h>
 #include <math.h>
+#include <atomic>
 #if defined(__APPLE__)
 #include <malloc/malloc.h>
 #elif defined(__linux__)
@@ -220,18 +221,6 @@ static inline int clz32(unsigned int a)
 }
 
 /* WARNING: undefined if a = 0 */
-static inline int clz64(uint64_t a)
-{
-   #if _MSC_VER
-    unsigned long i;
-    _BitScanReverse64 (&i, a);
-    return 63 ^ i;
-   #else
-    return __builtin_clzll(a);
-   #endif
-}
-
-/* WARNING: undefined if a = 0 */
 static inline int ctz32(unsigned int a)
 {
    #if _MSC_VER
@@ -240,18 +229,6 @@ static inline int ctz32(unsigned int a)
     return 31 ^ i;
    #else
     return __builtin_ctz(a);
-   #endif
-}
-
-/* WARNING: undefined if a = 0 */
-static inline int ctz64(uint64_t a)
-{
-   #if _MSC_VER
-    unsigned long i;
-    _BitScanForward64 (&i, a);
-    return 63 ^ i;
-   #else
-    return __builtin_ctzll(a);
    #endif
 }
 
@@ -9452,9 +9429,16 @@ int JS_SetModuleExportList(JSContext *ctx, JSModuleDef *m,
 //#define CONFIG_ATOMICS
 #endif
 
-#if ! (defined(EMSCRIPTEN) || _MSC_VER)
-/* enable stack limitation */
-#define CONFIG_STACK_CHECK
+#if ! (defined(EMSCRIPTEN) || CHOC_QUICKJS_NO_STACK_CHECK || _MSC_VER)
+ #define CONFIG_STACK_CHECK
+#endif
+
+// Avoid enabling the stack check if the sanitiser is active, as it causes all
+// kinds of (hopefully) spurious exceptions
+#if defined (__has_feature)
+ #if __has_feature (address_sanitizer) && __has_feature (undefined_behavior_sanitizer)
+  #undef CONFIG_STACK_CHECK
+ #endif
 #endif
 
 
@@ -64069,9 +64053,29 @@ struct QuickJSContext  : public Context::Pimpl
         context = JS_NewContext (runtime);
         CHOC_ASSERT (context != nullptr);
         JS_SetContextOpaque (context, this);
+
+        JS_SetInterruptHandler (runtime, [] (JSRuntime*, void* opaque)
+        {
+            if (auto qjctx = static_cast<QuickJSContext*> (opaque))
+            {
+                if (qjctx->shouldCancel.load())
+                {
+                    qjctx->shouldCancel.store (false);
+                    return 1;
+                }
+            }
+
+            return 0;
+        }, this);
     }
 
     void pumpMessageLoop() override {}
+
+    bool cancel() override
+    {
+        shouldCancel.store (true);
+        return true;
+    }
 
     void pushObjectOrArray (const choc::value::ValueView& v) override { functionArgs.push_back (valueToJS (v).release()); }
     void pushArg (std::string_view v) override                        { functionArgs.push_back (stringToJS (v).release()); }
@@ -64177,9 +64181,12 @@ struct QuickJSContext  : public Context::Pimpl
         ValuePtr operator[] (uint32_t index) const    { return takeValue (JS_GetPropertyUint32 (context, value, index)); }
         ValuePtr operator[] (const char* name) const  { return takeValue (JS_GetPropertyStr (context, value, name)); }
 
-        choc::value::Value toChocValue() const
+        choc::value::Value toChocValue (uint32_t depth = 0) const
         {
             CHOC_ASSERT (context != nullptr);
+
+            if (depth > 32)
+                return {};
 
             if (JS_IsNumber (value))
             {
@@ -64206,9 +64213,9 @@ struct QuickJSContext  : public Context::Pimpl
                 uint32_t len = 0;
                 JS_ToUint32 (context, &len, lengthProp.get());
 
-                return choc::value::createArray (len, [this] (uint32_t i)
+                return choc::value::createArray (len, [this, depth] (uint32_t i)
                 {
-                    return (*this)[i].toChocValue();
+                    return (*this)[i].toChocValue (depth + 1);
                 });
             }
 
@@ -64252,11 +64259,11 @@ struct QuickJSContext  : public Context::Pimpl
                     obj = std::move (proto);
                 }
 
-                auto o = choc::value::createObject (hasClassName ? (*this)[objectNameAttribute].toChocValue().toString()
+                auto o = choc::value::createObject (hasClassName ? (*this)[objectNameAttribute].toChocValue (depth + 1).toString()
                                                                  : std::string());
 
                 for (auto& propName : propNames)
-                    o.setMember (propName, (*this)[propName.c_str()].toChocValue());
+                    o.setMember (propName, (*this)[propName.c_str()].toChocValue (depth + 1));
 
                 return o;
             }
@@ -64367,6 +64374,7 @@ struct QuickJSContext  : public Context::Pimpl
     std::vector<Context::NativeFunction> registeredFunctions;
     std::vector<JSValue> functionArgs;
     JSAtom functionToCall = {};
+    std::atomic<bool> shouldCancel { false };
 
     static constexpr const char* objectNameAttribute = "_objectName";
 };
