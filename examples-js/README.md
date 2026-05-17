@@ -131,3 +131,8 @@ var radius = radius || 20;   // only initializes on first load
 | `sound/audio-input.js` | Port of audioInputExample — mic capture; left/right waveforms + volume circle + history graph |
 | `sound/audio-output.js` | Port of audioOutputExample — sine/noise synthesis; mouse Y=freq, X=pan; click for noise |
 | `sound/sound-buffer.js` | Port of soundBufferExample — 3 detuned sines × 3 LFOs; waveform width tracks RMS |
+| `3d/easy-cam.js` | Port of easyCamExample — six coloured shapes on the three world axes; drag/scroll to orbit |
+| `3d/box-cloud.js` | Port of ofBoxExample — 100 boxes drifting on noise-driven trajectories with coloured wireframe halos |
+| `3d/ribbon.js` | Port of cameraRibbonExample — mouse trail becomes a tapered 3D ribbon; Space to orbit the sculpture |
+| `3d/primitives.js` | Port of 3DPrimitivesExample — sphere, box, and mesh-built torus/cylinder/cone/plane; auto-spin + wireframe toggle |
+| `3d/advanced3d.js` | Port of advanced3dExample — 100-particle swarm with Simple Harmonic Motion; springs to origin + light attractor |
