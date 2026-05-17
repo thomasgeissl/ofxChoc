@@ -5,7 +5,8 @@
 #include <thread>
 #include <atomic>
 #include <string>
-#include "./ofBindings/0-12-0/bindings.h"
+#include "./ofBindings/0-12-1/bindings.h"
+#include "./ofBindings/0-12-1/objectBindings.h"
 
 namespace ofxChoc
 {
@@ -21,6 +22,7 @@ namespace ofxChoc
         {
             choc::javascript::registerConsoleFunctions(_context);
             registerOfBindings(_context);
+            registerOfObjectBindings(_context, _registry);
         }
 
         ~JsRuntime()
@@ -59,28 +61,45 @@ namespace ofxChoc
         }
 
         bool exists(std::string name){
-            std::string expression = name +" != null && " + name + "!= undefined";
+            std::string expression = "typeof " + name + " === 'function'";
             return _context.evaluateExpression(expression).getBool();
+        }
+
+        void invoke(const std::string& expression){
+            try {
+                _context.evaluateExpression(expression);
+            } catch(choc::javascript::Error& e) {
+                ofLogError("ofJsRuntime") << e.what();
+            }
         }
 
         bool evaluateFile(std::filesystem::path path, bool gameLoopActive){
             ofFile file(path);
-            if (file.exists())
+            if (!file.exists())
             {
-                ofBuffer buffer = file.readToBuffer();
-                std::string fileContent = buffer.getText();
-                ofLog() << "File Content: " << fileContent;
-                try{
-                    _context.evaluateExpression(fileContent);
-                }catch(choc::javascript::Error& e){
-                    ofLogError() << e.what();
-                    return false;
-                }
-                _gameLoopActive = gameLoopActive;
-                // TODO: do we need to call setup?
-                return true;
+                ofLogError("ofJsRuntime") << "File not found: " << path;
+                return false;
             }
-            return false;
+            // Release any C++ objects created by the previous script run
+            _registry.clear();
+
+            // Expose the script's directory as __dirname (absolute path, no trailing slash)
+            std::string dir = path.parent_path().string();
+            // Escape backslashes for Windows paths just in case
+            for (auto& c : dir) if (c == '\\') c = '/';
+            try { _context.evaluateExpression("var __dirname = '" + dir + "';"); }
+            catch (...) {}
+
+            ofBuffer buffer = file.readToBuffer();
+            std::string fileContent = buffer.getText();
+            try{
+                _context.evaluateExpression(fileContent);
+            }catch(choc::javascript::Error& e){
+                ofLogError("ofJsRuntime") << "JS error in " << path << ": " << e.what();
+                return false;
+            }
+            _gameLoopActive = gameLoopActive;
+            return true;
         }
 
         void update()
@@ -136,9 +155,7 @@ namespace ofxChoc
             }
             if(_gameLoopActive){
                 if(exists("update")){
-                    _context.run("update()");
-                }else{
-                    ofLogNotice() << "has no update";
+                    invoke("update()");
                 }
             }
         }
@@ -146,99 +163,59 @@ namespace ofxChoc
         void draw(){
             if(_gameLoopActive){
                 if(exists("draw")){
-                    _context.run("draw()");
+                    invoke("draw()");
                 }
             }
         }
 
         void onKeyPressed(int key)
         {
-            if(_gameLoopActive){
-                if(exists("keyPressed")){
-                    std::string expression = "keyPressed("+ofToString(key)+")";
-                    _context.run(expression);
-                }
-            }
+            if(_gameLoopActive && exists("keyPressed"))
+                invoke("keyPressed("+ofToString(key)+")");
         }
         void onKeyReleased(int key)
         {
-            if(_gameLoopActive){
-                if(exists("keyReleased")){
-                    std::string expression = "keyReleased("+ofToString(key)+")";
-                    _context.run(expression);
-                }
-            }
+            if(_gameLoopActive && exists("keyReleased"))
+                invoke("keyReleased("+ofToString(key)+")");
         }
         void onMouseMoved(int x, int y)
         {
-            if(_gameLoopActive){
-                if(exists("mouseMoved")){
-                    std::string expression = "mouseMoved("+ofToString(x)+", "+ofToString(y)+")";
-                    _context.run(expression);
-                }
-            }
+            if(_gameLoopActive && exists("mouseMoved"))
+                invoke("mouseMoved("+ofToString(x)+","+ofToString(y)+")");
         }
         void onMouseDragged(int x, int y, int button)
         {
-            if(_gameLoopActive){
-                if(exists("mouseDragged")){
-                    std::string expression = "mouseDragged("+ofToString(x)+", "+ofToString(y)+", "+ofToString(button)+")";
-                    _context.run(expression);
-                }
-            }
+            if(_gameLoopActive && exists("mouseDragged"))
+                invoke("mouseDragged("+ofToString(x)+","+ofToString(y)+","+ofToString(button)+")");
         }
         void onMousePressed(int x, int y, int button)
         {
-            if(_gameLoopActive){
-                if(exists("mousePressed")){
-                    std::string expression = "mousePressed("+ofToString(x)+", "+ofToString(y)+", "+ofToString(button)+")";
-                    _context.run(expression);
-                }
-            }
+            if(_gameLoopActive && exists("mousePressed"))
+                invoke("mousePressed("+ofToString(x)+","+ofToString(y)+","+ofToString(button)+")");
         }
         void onMouseReleased(int x, int y, int button)
         {
-            if(_gameLoopActive){
-                if(exists("mouseReleased")){
-                    std::string expression = "mouseReleased("+ofToString(x)+", "+ofToString(y)+", "+ofToString(button)+")";
-                    _context.run(expression);
-                }
-            }
+            if(_gameLoopActive && exists("mouseReleased"))
+                invoke("mouseReleased("+ofToString(x)+","+ofToString(y)+","+ofToString(button)+")");
         }
         void onMouseEntered(int x, int y)
         {
-            if(_gameLoopActive){
-                if(exists("mouseEntered")){
-                    std::string expression = "mouseEntered("+ofToString(x)+", "+ofToString(y)+")";
-                    _context.run(expression);
-                }
-            }
+            if(_gameLoopActive && exists("mouseEntered"))
+                invoke("mouseEntered("+ofToString(x)+","+ofToString(y)+")");
         }
         void onMouseExited(int x, int y)
         {
-            if(_gameLoopActive){
-                if(exists("mouseExited")){
-                    std::string expression = "mouseExited("+ofToString(x)+", "+ofToString(y)+")";
-                    _context.run(expression);
-                }
-            }
+            if(_gameLoopActive && exists("mouseExited"))
+                invoke("mouseExited("+ofToString(x)+","+ofToString(y)+")");
         }
         void onWindowResized(int w, int h)
         {
-            if(_gameLoopActive){
-                if(exists("windowResized")){
-                    std::string expression = "windowResized("+ofToString(w)+", "+ofToString(h)+")";
-                    _context.run(expression);
-                }
-            }
+            if(_gameLoopActive && exists("windowResized"))
+                invoke("windowResized("+ofToString(w)+","+ofToString(h)+")");
         }
         void onDragEvent(ofDragInfo dragInfo){
-            if(_gameLoopActive){
-                if(exists("dragEvent")){
-                    std::string expression = "dragEvent("+ofToString(dragInfo.position.x)+", "+ofToString(dragInfo.position.y)+")";
-                    _context.run(expression);
-                }
-            }
+            if(_gameLoopActive && exists("dragEvent"))
+                invoke("dragEvent("+ofToString(dragInfo.position.x)+","+ofToString(dragInfo.position.y)+")");
         }
         void onMessage(ofMessage message){
             if(_gameLoopActive){
@@ -253,6 +230,7 @@ namespace ofxChoc
 
     // private:
         choc::javascript::Context _context;
+        Registry _registry;
         std::atomic<bool> _replActive;
         bool _gameLoopActive;
         std::string _currentInput; // Stores the input from user until evaluation

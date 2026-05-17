@@ -1,5 +1,6 @@
 #pragma once
 
+#include "./helpers.h"
 #include "./application.h"
 #include "./utils.h"
 #include "./gl.h"
