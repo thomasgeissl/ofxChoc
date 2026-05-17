@@ -9,17 +9,27 @@ int main(int argc, const char **argv)
     auto watch = false;
     auto gameLoopActive = true;
     choc::ArgumentList args (argc, argv);
-	ofSetupOpenGL(width, height, OF_WINDOW);
+
+    // Resolve file path BEFORE ofSetupOpenGL, which changes cwd to the app bundle on macOS
+    std::filesystem::path filePath;
+    if(args.contains("--file")){
+        filePath = std::filesystem::absolute(args.getExistingFile("--file", false));
+    } else if(args.contains("-f")){
+        filePath = std::filesystem::absolute(args.getExistingFile("-f", false));
+    }
 
     if(args.contains("--watch")){
         watch = true;
     }
 
-    if(args.contains("--file")){
-	    return ofRunApp(new ofApp(args.getExistingFile("--file", false), gameLoopActive, watch));
-    }if(args.contains("-f")){
-	    return ofRunApp(new ofApp(args.getExistingFile("-f", false), gameLoopActive, watch));
-    }else{
-	    return ofRunApp(new ofApp());
+    ofGLWindowSettings glSettings;
+    glSettings.setGLVersion(3, 2);
+    glSettings.setSize(width, height);
+    ofCreateWindow(glSettings);
+
+    if(!filePath.empty()){
+        return ofRunApp(new ofApp(filePath, gameLoopActive, watch));
+    } else {
+        return ofRunApp(new ofApp());
     }
 }

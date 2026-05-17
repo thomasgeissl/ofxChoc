@@ -2,7 +2,7 @@
 #include "ofMain.h"
 #include "../libs/choc/gui/choc_WebView.h"
 #include "../libs/choc/gui/choc_DesktopWindow.h"
-#include "./ofBindings/0-12-0/bindings.h"
+#include "./ofBindings/0-12-1/bindings.h"
 
 namespace ofxChoc
 {
