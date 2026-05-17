@@ -50,6 +50,7 @@ All bindings live on the global `of` object:
 - `of.drawBox(x, y, z, size)` / `of.drawBox(size)`
 - `of.drawSphere(x, y, z, r)` / `of.drawSphere(r)`
 - `of.drawBitmapString(str, x, y)`
+- `of.beginShape()` / `of.vertex(x, y, z=0)` / `of.endShape(close=false)` — draw polylines and filled shapes
 
 **Transforms / GL**
 - `of.pushMatrix()` / `of.popMatrix()`
@@ -68,7 +69,8 @@ All bindings live on the global `of` object:
 - `new of.Mesh()` — `.addVertex(x,y,z)`, `.addTexCoord(u,v)`, `.draw()`
 - `new of.VideoPlayer()` — `.load(path)`, `.play()`, `.update()`, `.draw(x,y,w,h)`, `.setSpeed(s)`, `.getSpeed()`, `.getCurrentFrame()`, `.getTotalNumFrames()`, `.getIsMovieDone()`, `.previousFrame()`, `.nextFrame()`, `.firstFrame()`, `.setFrame(n)`, `.getPixelColor(x,y)`
 - `new of.VideoGrabber()` — `.setup(w,h)`, `.setDeviceID(id)`, `.setDesiredFrameRate(fps)`, `.update()`, `.draw(x,y,w,h)`, `.getPixelColor(x,y)`, `.listDevices()`
-- `new of.SoundPlayer()` — `.load(path)`, `.play()`, `.setLoop(bool)`
+- `new of.SoundPlayer()` — `.load(path, stream=false)`, `.play()`, `.stop()`, `.setVolume(v)`, `.setPan(p)`, `.setSpeed(s)`, `.setLoop(bool)`, `.setMultiPlay(bool)`, `.isLoaded()`, `.isPlaying()`, `.getPosition()`, `.setPosition(pct)`
+- `new of.SoundStream()` — `.setupInput(sr, bufSize, numCh)`, `.setupOutput(sr, bufSize, numCh)`, `.start()`, `.stop()`, `.getInputSamples()`, `.getInputRMS()`, `.pushOutputSamples(arr)`, `.getLastOutputSamples()`, `.getLastOutputRMS()`, `.getBufferSize()`, `.getSampleRate()`, `.getNumInputChannels()`, `.getNumOutputChannels()`
 - `new of.Font()` — `.load(path,size)`, `.drawString(str,x,y)`
 - `new of.Camera()` / `new of.EasyCam()` — `.begin()`, `.end()`
 - `new of.Serial()` — `.setup(device,baud)`, `.readLine()`
@@ -124,3 +126,8 @@ var radius = radius || 20;   // only initializes on first load
 | `video/grabber.js` | Port of videoGrabberExample — live webcam + colour-inverted copy |
 | `video/ascii.js` | Port of asciiVideoExample — webcam rendered as ASCII characters |
 | `video/slitscan.js` | Port of slitscanRadialClockExample — slitscan clock with radial display |
+| `sound/player.js` | Port of soundPlayerExample — three sound files; click to play, mouse Y/X for speed/pan, drag middle column for beat speed |
+| `sound/bouncing.js` | Port of soundPlayerFFTExample — ball bounces off walls triggering sounds; drag mouse to fling; velocity history graph |
+| `sound/audio-input.js` | Port of audioInputExample — mic capture; left/right waveforms + volume circle + history graph |
+| `sound/audio-output.js` | Port of audioOutputExample — sine/noise synthesis; mouse Y=freq, X=pan; click for noise |
+| `sound/sound-buffer.js` | Port of soundBufferExample — 3 detuned sines × 3 LFOs; waveform width tracks RMS |

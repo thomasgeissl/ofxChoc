@@ -72,9 +72,29 @@ inline void registerOfGraphicsBindings(choc::javascript::Context &context)
             return {};
         });
 
-    bindFn(context, "_ofxChoc_ofBindings_fill",   &ofFill);
-    bindFn(context, "_ofxChoc_ofBindings_noFill",  &ofNoFill);
+    bindFn(context, "_ofxChoc_ofBindings_fill",        &ofFill);
+    bindFn(context, "_ofxChoc_ofBindings_noFill",      &ofNoFill);
     bindFn(context, "_ofxChoc_ofBindings_setLineWidth", &ofSetLineWidth);
+    bindFn(context, "_ofxChoc_ofBindings_beginShape",  &ofBeginShape);
+
+    // ofVertex is overloaded — expose 2D (x,y) and 3D (x,y,z) variants
+    context.registerFunction("_ofxChoc_ofBindings_vertex",
+        [](choc::javascript::ArgumentList args) -> choc::value::Value
+        {
+            if (args.size() >= 3)
+                ofVertex(fromJS<float>(args[0]), fromJS<float>(args[1]), fromJS<float>(args[2]));
+            else
+                ofVertex(fromJS<float>(args[0]), fromJS<float>(args[1]));
+            return {};
+        });
+
+    // ofEndShape(bool bClose = false)
+    context.registerFunction("_ofxChoc_ofBindings_endShape",
+        [](choc::javascript::ArgumentList args) -> choc::value::Value
+        {
+            ofEndShape(args.size() > 0 && args[0] && args[0]->getBool());
+            return {};
+        });
 
     // ofDrawRectangle is overloaded — use 2D variant
     context.registerFunction("_ofxChoc_ofBindings_drawRectangle",
@@ -159,6 +179,9 @@ ofxChoc_graphics = {
     drawBox:           function(x,y,z,size)                          { return _ofxChoc_ofBindings_drawBox(x,y,z,size) },
     drawSphere:        function(x,y,z,r)                             { return _ofxChoc_ofBindings_drawSphere(x,y,z,r) },
     drawBitmapString:  function(str,x,y)                             { return _ofxChoc_ofBindings_drawBitmapString(str,x,y) },
+    beginShape:        function()                                     { return _ofxChoc_ofBindings_beginShape() },
+    vertex:            function(x,y,z=0)                             { return _ofxChoc_ofBindings_vertex(x,y,z) },
+    endShape:          function(close=false)                          { return _ofxChoc_ofBindings_endShape(close) },
 };
 )");
 }
