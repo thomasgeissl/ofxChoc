@@ -83,3 +83,35 @@ void bindFn(choc::javascript::Context& ctx, const std::string& name, Ret (*fn)(A
         return callAndWrap(fn, args, std::make_index_sequence<sizeof...(Args)>{});
     });
 }
+
+//==============================================================================
+// bindFn overload for member functions — same convenience, captures object ptr.
+//
+// Usage:
+//   bindFn(ctx, "jsName", this, &MyClass::myMethod);
+
+template<typename T, typename Ret, typename... Args, std::size_t... I>
+choc::value::Value callMethodAndWrap(T* obj, Ret (T::*method)(Args...),
+                                     choc::javascript::ArgumentList args,
+                                     std::index_sequence<I...>)
+{
+    if constexpr (std::is_void_v<Ret>)
+    {
+        (obj->*method)(fromJS<std::decay_t<Args>>(args[I])...);
+        return {};
+    }
+    else
+    {
+        return toJS((obj->*method)(fromJS<std::decay_t<Args>>(args[I])...));
+    }
+}
+
+template<typename T, typename Ret, typename... Args>
+void bindFn(choc::javascript::Context& ctx, const std::string& name,
+            T* obj, Ret (T::*method)(Args...))
+{
+    ctx.registerFunction(name, [obj, method](choc::javascript::ArgumentList args) -> choc::value::Value
+    {
+        return callMethodAndWrap(obj, method, args, std::make_index_sequence<sizeof...(Args)>{});
+    });
+}
