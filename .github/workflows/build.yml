@@ -22,7 +22,7 @@ jobs:
         include:
           - os: ubuntu-24.04
             platform: linux64
-            of_package: of_v0.12.1_linux64_release
+            of_package: of_v0.12.1_linux64_gcc6_release
           - os: macos-15
             platform: osx
             of_package: of_v0.12.1_osx_release
