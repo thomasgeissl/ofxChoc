@@ -1,21 +1,16 @@
-name: Build Examples
+name: Release ofJsRuntime
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    tags:
+      - '*'
 
 env:
   OF_VERSION: 0.12.1
 
 jobs:
   build:
-    name: ${{ matrix.platform }}
+    name: Build ${{ matrix.platform }}
     strategy:
       fail-fast: false
       matrix:
@@ -73,27 +68,47 @@ jobs:
             libxmu-dev libxxf86vm-dev nlohmann-json3-dev libcurl4-openssl-dev \
             libwebkit2gtk-4.1-dev
 
-      - name: Build all examples
+      - name: Build ofJsRuntime
         run: |
-          ADDON_DIR="openFrameworks/addons/ofxChoc"
           NPROC=$(nproc 2>/dev/null || sysctl -n hw.logicalcpu)
-          FAILED=()
+          make -C openFrameworks/addons/ofxChoc/ofJsRuntime -j"$NPROC" Release
 
-          for dir in "$ADDON_DIR"/example-* "$ADDON_DIR"/ofJsRuntime; do
-            [ -f "$dir/Makefile" ] || continue
-            name=$(basename "$dir")
-            echo "::group::Building $name"
-            if make -C "$dir" -j"$NPROC" Release; then
-              echo "✓ $name"
-            else
-              echo "✗ $name FAILED"
-              FAILED+=("$name")
-            fi
-            echo "::endgroup::"
-          done
+      - name: Package binary (Linux)
+        if: matrix.platform == 'linux64'
+        run: |
+          cp openFrameworks/addons/ofxChoc/ofJsRuntime/bin/ofJsRuntime \
+             ofJsRuntime-linux64
 
-          if [ ${#FAILED[@]} -ne 0 ]; then
-            echo "The following examples failed to build:"
-            printf '  - %s\n' "${FAILED[@]}"
-            exit 1
-          fi
+      - name: Package binary (macOS)
+        if: matrix.platform == 'osx'
+        run: |
+          cd openFrameworks/addons/ofxChoc/ofJsRuntime/bin
+          zip -r "$GITHUB_WORKSPACE/ofJsRuntime-osx.zip" ofJsRuntime.app
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ofJsRuntime-${{ matrix.platform }}
+          path: ofJsRuntime-*
+
+  release:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create GitHub Release and upload binaries
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/ofJsRuntime-linux64
+            dist/ofJsRuntime-osx.zip
