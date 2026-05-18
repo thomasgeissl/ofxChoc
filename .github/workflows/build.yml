@@ -1,0 +1,87 @@
+name: Build Examples
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  OF_VERSION: 0.12.1
+
+jobs:
+  build:
+    name: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux64
+            of_package: of_v0.12.1_linux64_release
+          - os: macos-15
+            platform: osx
+            of_package: of_v0.12.1_osx_release
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout ofxChoc
+        uses: actions/checkout@v4
+        with:
+          path: ofxChoc
+
+      - name: Cache openFrameworks
+        id: cache-of
+        uses: actions/cache@v4
+        with:
+          path: openFrameworks
+          key: of-${{ matrix.of_package }}
+
+      - name: Download openFrameworks
+        if: steps.cache-of.outputs.cache-hit != 'true'
+        run: |
+          wget -q "https://github.com/openframeworks/openFrameworks/releases/download/${{ env.OF_VERSION }}/${{ matrix.of_package }}.tar.gz"
+          tar -xzf "${{ matrix.of_package }}.tar.gz"
+          mv "${{ matrix.of_package }}" openFrameworks
+
+      - name: Place addon in OF addons directory
+        run: mv ofxChoc openFrameworks/addons/ofxChoc
+
+      - name: Install Linux system dependencies
+        if: matrix.platform == 'linux64'
+        run: |
+          cd openFrameworks
+          scripts/ci/linux64/install.sh
+          # webkit2gtk: Ubuntu 24 ships 4.1, fall back to 4.0 for older runners
+          sudo apt-get install -y libwebkit2gtk-4.1-dev \
+            || sudo apt-get install -y libwebkit2gtk-4.0-dev
+
+      - name: Build all examples
+        run: |
+          ADDON_DIR="openFrameworks/addons/ofxChoc"
+          NPROC=$(nproc 2>/dev/null || sysctl -n hw.logicalcpu)
+          FAILED=()
+
+          for dir in "$ADDON_DIR"/example-* "$ADDON_DIR"/ofJsRuntime; do
+            [ -f "$dir/Makefile" ] || continue
+            name=$(basename "$dir")
+            echo "::group::Building $name"
+            if make -C "$dir" -j"$NPROC" Release; then
+              echo "✓ $name"
+            else
+              echo "✗ $name FAILED"
+              FAILED+=("$name")
+            fi
+            echo "::endgroup::"
+          done
+
+          if [ ${#FAILED[@]} -ne 0 ]; then
+            echo "The following examples failed to build:"
+            printf '  - %s\n' "${FAILED[@]}"
+            exit 1
+          fi
