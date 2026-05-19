@@ -3,6 +3,8 @@
 //
 //   ./ofJsRuntime -f ../examples-js/chocons/oscSender.js --watch
 //
+// Requires: chocons/ofxOscBindings.dylib next to this script (see examples-js/README.md)
+//
 // Controls:
 //   mouse move  → /mouse/position (normalized x, y)
 //   mouse down/up → /mouse/button
@@ -12,11 +14,17 @@
 var HOST = "localhost";
 var PORT = 12345;
 
-var sender = new ofx.osc.Sender();
-var img = new of.Image();
+var sender;
+var img;
 var logoPath = __dirname + "/data/of-logo.png";
 
 function setup() {
+    if (typeof ofx === "undefined" || !ofx.osc) {
+        console.error("ofxOsc chocon not loaded — build chocons/ofxOsc and copy ofxOscBindings.dylib to chocons/");
+        return;
+    }
+    sender = new ofx.osc.Sender();
+    img = new of.Image();
     sender.setup(HOST, PORT);
     of.setWindowTitle("oscSenderExample");
     of.setFrameRate(60);
@@ -24,6 +32,7 @@ function setup() {
 }
 
 function update() {
+    if (!sender) return;
     var mx = of.map(of.getMouseX(), 0, of.getWidth(), 0, 1, true);
     var my = of.map(of.getMouseY(), 0, of.getHeight(), 0, 1, true);
     sender.send("/mouse/position", mx, my);
@@ -32,7 +41,7 @@ function update() {
 function draw() {
     of.background(255, 180, 180);
 
-    if (img.isAllocated()) {
+    if (img && img.isAllocated()) {
         of.setColor(255);
         img.draw(
             of.getWidth() / 2 - img.getWidth() / 2,
@@ -48,6 +57,7 @@ function draw() {
 }
 
 function keyPressed(key) {
+    if (!sender) return;
     if (key === 97 || key === 65) {
         sender.send("/test", 1, 3.5, "hello", of.getElapsedTimef());
     }
@@ -63,9 +73,11 @@ function keyPressed(key) {
 }
 
 function mousePressed(x, y, button) {
+    if (!sender) return;
     sender.send("/mouse/button", 1, "down");
 }
 
 function mouseReleased(x, y, button) {
+    if (!sender) return;
     sender.send("/mouse/button", 0, "up");
 }

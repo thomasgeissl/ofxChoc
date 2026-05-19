@@ -2,12 +2,14 @@
 // Pair with oscSender.js or the C++ oscSenderExample.
 //
 //   ./ofJsRuntime -f ../examples-js/chocons/oscReceiver.js --watch
+//
+// Requires: chocons/ofxOscBindings.dylib next to this script (see examples-js/README.md)
 
 var PORT = 12345;
 var NUM_MSG_STRINGS = 20;
 
-var receiver = new ofx.osc.Receiver();
-var receivedImage = new of.Image();
+var receiver;
+var receivedImage;
 
 var currentMsgString = 0;
 var msgStrings = [];
@@ -18,6 +20,12 @@ var mouseButtonInt = 0;
 var mouseButtonState = "";
 
 function setup() {
+    if (typeof ofx === "undefined" || !ofx.osc) {
+        console.error("ofxOsc chocon not loaded — build chocons/ofxOsc and copy ofxOscBindings.dylib to chocons/");
+        return;
+    }
+    receiver = new ofx.osc.Receiver();
+    receivedImage = new of.Image();
     receiver.setup(PORT);
     of.setWindowTitle("oscReceiveExample");
     of.setFrameRate(60);
@@ -30,6 +38,7 @@ function setup() {
 }
 
 function update() {
+    if (!receiver) return;
     var now = of.getElapsedTimef();
 
     for (var i = 0; i < NUM_MSG_STRINGS; i++) {
@@ -75,7 +84,7 @@ function update() {
 function draw() {
     of.background(100, 20, 20);
 
-    if (receivedImage.isAllocated() && receivedImage.getWidth() > 0) {
+    if (receivedImage && receivedImage.isAllocated() && receivedImage.getWidth() > 0) {
         of.setColor(255);
         receivedImage.draw(
             of.getWidth() / 2 - receivedImage.getWidth() / 2,

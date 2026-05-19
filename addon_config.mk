@@ -12,4 +12,5 @@ osx:
 	ADDON_FRAMEWORKS = WebKit
 
 linux64:
-	ADDON_PKG_CONFIG_LIBRARIES = webkit2gtk-4.0
+	# 22.04: webkit2gtk-4.0; 24.04+: webkit2gtk-4.1 — gtk+-3.0 needed by choc_MessageLoop.h
+	ADDON_PKG_CONFIG_LIBRARIES = gtk+-3.0 $(shell pkg-config --exists webkit2gtk-4.1 && echo webkit2gtk-4.1 || echo webkit2gtk-4.0)

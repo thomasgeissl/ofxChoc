@@ -4,8 +4,8 @@
 //
 // Build: see ../Makefile
 // Entry points exported:
-//   ofxChoc_registerAddon(ctx) — called once at startup to register bindings
-//   ofxChoc_clearAddon()       — called on hot-reload to release all live objects
+//   ofxChoc_registerChocon(ctx) — called once at startup to register bindings
+//   ofxChoc_clearChocon()       — called on hot-reload to release all live objects
 
 #include "ofxOsc.h"
 #include "choc_javascript.h"  // interface only, no QuickJS compiled in
@@ -96,7 +96,7 @@ static std::string messageToJson(const ofxOscMessage& msg) {
 
 // ── Entry points ──────────────────────────────────────────────────────────────
 
-extern "C" void ofxChoc_registerAddon(choc::javascript::Context& ctx) {
+extern "C" void ofxChoc_registerChocon(choc::javascript::Context& ctx) {
 
     // ── OscReceiver ───────────────────────────────────────────────────────────
 

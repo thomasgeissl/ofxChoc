@@ -18,13 +18,12 @@ void ofApp::setup()
   _jsRuntime.setup();
   if(!_path.empty()){
     _jsRuntime.loadChocons(_path.parent_path());
-    _jsRuntime.evaluateFile(_path, _gameLoopMode);
+    if(_jsRuntime.evaluateFile(_path, _gameLoopMode) && _gameLoopMode){
+      _jsRuntime.startGameLoop();
+    }
   }
   if(_replMode){
     _jsRuntime.startRepl();
-  }
-  if(_gameLoopMode){
-    _jsRuntime.startGameLoop();
   }
 }
 
@@ -95,5 +94,8 @@ void ofApp::gotMessage(ofMessage msg)
 
 void ofApp::onFileWatcherEvent(choc::file::Watcher::Event &event)
 {
-  _jsRuntime.evaluateFile(_path, _gameLoopMode);
+  if(_jsRuntime.evaluateFile(_path, _gameLoopMode) && _gameLoopMode)
+    _jsRuntime.startGameLoop();
+  else
+    _jsRuntime.stopGameLoop();
 }

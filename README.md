@@ -14,7 +14,7 @@
 ## Usage
 * cd path/to/openFrameworks/addons
 * git clone https://github.com/thomasgeissl/ofxChoc
-* on linux: `sudo apt install libwebkit2gtk-4.0-dev`
+* on linux: `sudo apt install libwebkit2gtk-4.1-dev` (4.0 on older distros: `libwebkit2gtk-4.0-dev`)
 * cd ofxChoc/example-webview
 * make -j8 && make run
 

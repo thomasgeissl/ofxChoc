@@ -153,7 +153,7 @@ make
 
 This produces `ofxOscBindings.dylib` in that directory. Copy it into your script's `chocons/` folder (see path above for the bundled examples).
 
-To author a new chocon, see `addons/ofxChoc/chocons/` — each chocon is a thin Makefile plus a binding `.cpp` that exports `ofxChoc_registerAddon` and `ofxChoc_clearChocon`.
+To author a new chocon, see `addons/ofxChoc/chocons/` — each chocon is a thin Makefile plus a binding `.cpp` that exports `ofxChoc_registerChocon` and `ofxChoc_clearChocon`.
 
 ### If a chocon is missing or fails to load
 

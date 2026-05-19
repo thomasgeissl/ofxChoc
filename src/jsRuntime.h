@@ -64,9 +64,9 @@ namespace ofxChoc
                         continue;
                     }
                     using RegisterFn = void(*)(choc::javascript::Context&);
-                    auto fn = (RegisterFn)dlsym(handle, "ofxChoc_registerAddon");
+                    auto fn = (RegisterFn)dlsym(handle, "ofxChoc_registerChocon");
                     if (!fn) {
-                        ofLogWarning("ofJsRuntime") << entry.path().filename().string() << ": no ofxChoc_registerAddon symbol, skipping";
+                        ofLogWarning("ofJsRuntime") << entry.path().filename().string() << ": no ofxChoc_registerChocon symbol, skipping";
                         dlclose(handle);
                         continue;
                     }
@@ -117,6 +117,16 @@ namespace ofxChoc
             }
         }
 
+        bool invokeChecked(const std::string& expression){
+            try {
+                _context.evaluateExpression(expression);
+                return true;
+            } catch(choc::javascript::Error& e) {
+                ofLogError("ofJsRuntime") << e.what();
+                return false;
+            }
+        }
+
         bool evaluateFile(std::filesystem::path path, bool gameLoopActive){
             ofFile file(path);
             if (!file.exists())
@@ -145,10 +155,14 @@ namespace ofxChoc
                 _context.evaluateExpression(fileContent);
             }catch(choc::javascript::Error& e){
                 ofLogError("ofJsRuntime") << "JS error in " << path << ": " << e.what();
+                _gameLoopActive = false;
                 return false;
             }
             if(exists("setup")){
-                invoke("setup()");
+                if (!invokeChecked("setup()")) {
+                    _gameLoopActive = false;
+                    return false;
+                }
             }
             _gameLoopActive = gameLoopActive;
             return true;
