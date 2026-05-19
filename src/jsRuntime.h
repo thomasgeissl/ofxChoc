@@ -5,6 +5,8 @@
 #include <thread>
 #include <atomic>
 #include <string>
+#include <set>
+#include <dlfcn.h>
 #include "./ofBindings/0-12-1/bindings.h"
 #include "./ofBindings/0-12-1/objectBindings.h"
 
@@ -28,10 +30,52 @@ namespace ofxChoc
         ~JsRuntime()
         {
             stopRepl();
+            for (auto* h : _addonHandles)
+                dlclose(h);
         }
 
         void setup()
         {
+        }
+
+        void loadChocons(const std::filesystem::path& scriptDir)
+        {
+#if defined(TARGET_OSX)
+            const std::string ext = ".dylib";
+#else
+            const std::string ext = ".so";
+#endif
+            std::vector<std::filesystem::path> searchPaths = {
+                scriptDir / "chocons",
+                std::filesystem::path(ofToDataPath("chocons", true))
+            };
+
+            std::set<std::string> loaded;
+            for (auto& dir : searchPaths) {
+                if (!std::filesystem::exists(dir)) continue;
+                for (auto& entry : std::filesystem::directory_iterator(dir)) {
+                    if (entry.path().extension() != ext) continue;
+                    std::string stem = entry.path().stem().string();
+                    if (loaded.count(stem)) continue;
+
+                    void* handle = dlopen(entry.path().c_str(), RTLD_LAZY | RTLD_LOCAL);
+                    if (!handle) {
+                        ofLogError("ofJsRuntime") << "addon load failed: " << dlerror();
+                        continue;
+                    }
+                    using RegisterFn = void(*)(choc::javascript::Context&);
+                    auto fn = (RegisterFn)dlsym(handle, "ofxChoc_registerAddon");
+                    if (!fn) {
+                        ofLogWarning("ofJsRuntime") << entry.path().filename().string() << ": no ofxChoc_registerAddon symbol, skipping";
+                        dlclose(handle);
+                        continue;
+                    }
+                    fn(_context);
+                    _addonHandles.push_back(handle);
+                    loaded.insert(stem);
+                    ofLogNotice("ofJsRuntime") << "loaded chocon: " << entry.path().filename().string();
+                }
+            }
         }
 
         void startRepl(){
@@ -82,6 +126,11 @@ namespace ofxChoc
             }
             // Release any C++ objects created by the previous script run
             _registry.clear();
+            for (auto* h : _addonHandles) {
+                using ClearFn = void(*)();
+                auto clearFn = (ClearFn)dlsym(h, "ofxChoc_clearChocon");
+                if (clearFn) clearFn();
+            }
 
             // Expose the script's directory as __dirname (absolute path, no trailing slash)
             std::string dir = path.parent_path().string();
@@ -97,6 +146,9 @@ namespace ofxChoc
             }catch(choc::javascript::Error& e){
                 ofLogError("ofJsRuntime") << "JS error in " << path << ": " << e.what();
                 return false;
+            }
+            if(exists("setup")){
+                invoke("setup()");
             }
             _gameLoopActive = gameLoopActive;
             return true;
@@ -236,5 +288,6 @@ namespace ofxChoc
         std::string _currentInput; // Stores the input from user until evaluation
         std::atomic<bool> _newInput; // Flag to indicate new input
         std::thread _inputThread; // Thread for reading console input
+        std::vector<void*> _addonHandles;
     };
 }

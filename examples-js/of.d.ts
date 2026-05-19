@@ -27,6 +27,8 @@ interface OfFbo {
 
 interface OfImage {
   load(path: string): boolean;
+  /** Load image bytes from a base64-encoded string (e.g. OSC blob payloads). */
+  loadFromBase64(base64: string): boolean;
   save(path: string): this;
   allocate(w: number, h: number): this;
   draw(x: number, y: number, w?: number, h?: number): this;
@@ -418,12 +420,16 @@ declare var __dirname: string;
 // ── User-defined callback functions ──────────────────────────────────────────
 // Define any of these in your JS file and they will be called automatically.
 
+declare function setup(): void;
 declare function draw(): void;
 declare function update(): void;
 declare function mousePressed(x: number, y: number, button: number): void;
 declare function mouseReleased(x: number, y: number, button: number): void;
 declare function mouseMoved(x: number, y: number): void;
 declare function mouseDragged(x: number, y: number, button: number): void;
+declare function mouseEntered(x: number, y: number): void;
+declare function mouseExited(x: number, y: number): void;
 declare function keyPressed(key: number): void;
 declare function keyReleased(key: number): void;
 declare function windowResized(w: number, h: number): void;
+declare function dragEvent(x: number, y: number): void;

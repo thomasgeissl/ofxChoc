@@ -4,7 +4,7 @@ ofApp::ofApp() : _watcher(nullptr), _replMode(true), _gameLoopMode(false)
 {
     ofLogNotice("ofJsRuntime") << "starting in repl mode";
 }
-ofApp::ofApp(std::filesystem::path path, bool gameLoopActive, bool watch) : _path(path), _watcher(new ofxChoc::FileWatcher(path)), _replMode(false), _gameLoopMode(true)
+ofApp::ofApp(std::filesystem::path path, bool gameLoopActive, bool watch) : _path(path), _watcher(new ofxChoc::FileWatcher(path)), _replMode(false), _gameLoopMode(gameLoopActive)
 {
   if(watch){
     ofAddListener(
@@ -12,18 +12,20 @@ ofApp::ofApp(std::filesystem::path path, bool gameLoopActive, bool watch) : _pat
         this, &ofApp::onFileWatcherEvent);
   }
   ofLogNotice("ofJsRuntime") << "starting in file mode";
-  _jsRuntime.evaluateFile(_path, gameLoopActive);
 }
 void ofApp::setup()
 {
   _jsRuntime.setup();
+  if(!_path.empty()){
+    _jsRuntime.loadChocons(_path.parent_path());
+    _jsRuntime.evaluateFile(_path, _gameLoopMode);
+  }
   if(_replMode){
     _jsRuntime.startRepl();
   }
   if(_gameLoopMode){
     _jsRuntime.startGameLoop();
   }
-
 }
 
 void ofApp::update()
