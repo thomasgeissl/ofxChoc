@@ -6,6 +6,7 @@
     * webview
     * webserver
     * oF js runtime (wip)
+    * chocons — dynamic plugin libraries for extra JS bindings (e.g. ofxOsc)
     * filewatcher
     * non-blocking file and message dialogs
     * ... more to come
@@ -23,6 +24,7 @@ This addon comes with a couple of example
 * example-webserver_webview: webview and webserver
 * example-filewatcher: watches local files or directories
 * ofJsRuntime: oF app that executes JavaScript code, it comes with a couple of oF bindings (wip)
+* chocons/ofxOsc: dynamic binding library for ofxOsc (used by `examples-js/chocons/`)
 * example-custombindings: minimal example showing how to call a JS function from C++ and expose a C++ member function to JS
 * choc: basic usage of choc webview, without openframeworks to debug a bug on linux
 
@@ -45,6 +47,28 @@ Expose a member function by passing the object pointer:
 bindFn(context, "jsName", this, &MyClass::myMethod);
 ```
 See `example-custombindings` for a minimal working example.
+
+### Chocons (plugin system)
+
+Chocons are shared libraries (`.dylib` / `.so`) that extend the JS runtime at load time — without recompiling `ofJsRuntime`. They wrap oF addons (or any C++ you need) and expose a JS API under the **`ofx.*`** namespace (built-in bindings stay on **`of.*`**).
+
+When you run a script with `-f path/to/script.js`, the runtime loads every chocon from:
+
+1. `<scriptDir>/chocons/` (next to your script — overrides bundled copies)
+2. `data/chocons/` (shipped inside the app bundle in releases)
+
+Each chocon exports `ofxChoc_registerChocon` and `ofxChoc_clearChocon`. Source and build scaffolding live in `chocons/`; the first one included is **ofxOsc** (`ofx.osc.Sender` / `ofx.osc.Receiver`).
+
+Build a chocon locally:
+
+```bash
+cd chocons/ofxOsc
+make
+```
+
+Release builds compile chocons in CI and bundle them into `data/chocons/` alongside `ofJsRuntime` — binaries are not committed to git.
+
+See `examples-js/README.md` (Chocons section) for load paths, the OSC API, and example scripts.
 
 ### Running a script
 ```bash
