@@ -3,23 +3,6 @@
 #include "ofMain.h"
 #include "helpers.h"
 
-inline void registerOfEventsBindings(choc::ui::WebView *webview)
-{
-    webview->bind("_ofxChoc_ofBindings_getKeyPressed",
-                  [](const choc::value::ValueView &args) -> choc::value::Value
-                  {
-                      if (args.size() == 1)
-                          return choc::value::createBool(ofGetKeyPressed((int)args[0].getFloat64()));
-                      return choc::value::createBool(false);
-                  });
-
-    webview->evaluateJavascript(R"(
-ofxChoc_events = {
-    getKeyPressed: function(keyCode) { return _ofxChoc_ofBindings_getKeyPressed(keyCode) },
-};
-)");
-}
-
 inline void registerOfEventsBindings(choc::javascript::Context &context)
 {
     bindFn(context, "_ofxChoc_ofBindings_getMouseX",         &ofGetMouseX);

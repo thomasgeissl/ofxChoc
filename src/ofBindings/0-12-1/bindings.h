@@ -27,18 +27,3 @@ of = {
 
     )");
 }
-
-inline void registerOfBindings(choc::ui::WebView *webview)
-{
-    registerOfEventsBindings(webview);
-
-    webview->evaluateJavascript(R"(
-of = {
-    // ...ofxChoc_application,
-    // ...ofxChoc_utils,
-    // ...ofxChoc_gl,
-    // ...ofxChoc_graphics,
-    ...ofxChoc_events,
-};
-    )");
-}

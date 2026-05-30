@@ -1,7 +1,8 @@
 #pragma once
 
 #include "ofMain.h"
-#include "ofxChoc.h"
+#include "jsRuntime.h"
+#include "fileWatcher.h"
 
 class ofApp : public ofBaseApp
 {

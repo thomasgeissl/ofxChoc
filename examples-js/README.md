@@ -2,6 +2,8 @@
 
 JavaScript examples for the `ofJsRuntime` app. Each `.js` file can be run directly without compiling.
 
+Open this folder in VS Code for autocompletion — `of.d.ts` and `jsconfig.json` cover the built-in `of.*` API.
+
 ## Running an example
 
 From the `ofJsRuntime` directory:
@@ -22,6 +24,7 @@ Define any of these functions in your JS file and they will be called automatica
 
 | Function | Called when |
 |---|---|
+| `setup()` | once after the script loads (and again on hot-reload) |
 | `draw()` | every frame, for drawing |
 | `update()` | every frame, for logic |
 | `mousePressed(x, y, button)` | mouse button pressed |
@@ -64,7 +67,7 @@ All bindings live on the global `of` object:
 
 **Objects (classes)**
 - `new of.Fbo()` — `.allocate(w,h,fmt)`, `.begin()`, `.end()`, `.draw(x,y)`
-- `new of.Image()` — `.load(path)`, `.draw(x,y,w,h)`, `.saveImage(path)`
+- `new of.Image()` — `.load(path)`, `.loadFromBase64(base64)`, `.save(path)`, `.draw(x,y,w,h)`, `.isAllocated()`
 - `new of.Shader()` — `.load(vert,frag)`, `.begin()`, `.end()`, `.setUniform1f(name,v)`, etc.
 - `new of.Mesh()` — `.addVertex(x,y,z)`, `.addTexCoord(u,v)`, `.draw()`
 - `new of.VideoPlayer()` — `.load(path)`, `.play()`, `.update()`, `.draw(x,y,w,h)`, `.setSpeed(s)`, `.getSpeed()`, `.getCurrentFrame()`, `.getTotalNumFrames()`, `.getIsMovieDone()`, `.previousFrame()`, `.nextFrame()`, `.firstFrame()`, `.setFrame(n)`, `.getPixelColor(x,y)`
@@ -115,6 +118,106 @@ var stored = stored || [];   // keeps existing value on reload
 var radius = radius || 20;   // only initializes on first load
 ```
 
+## Chocons (dynamic addon bindings)
+
+Chocons are shared libraries (`.dylib` on macOS, `.so` on Linux) that extend the JS runtime with extra APIs — typically wrapping an oF addon such as ofxOsc. They are loaded at runtime; you do not need to recompile `ofJsRuntime` to use them.
+
+### `ofx.*` vs `of.*`
+
+- Built-in bindings live on **`of.*`** (registered when the runtime starts).
+- Chocon bindings live on **`ofx.*`** (e.g. `ofx.osc.Sender`). Each chocon chooses its own namespace under `ofx`.
+
+### Where chocons are loaded from
+
+When you run `-f path/to/script.js`, the runtime searches in order:
+
+1. **`<scriptDir>/chocons/`** — next to your script (highest priority)
+2. **`data/chocons/`** — bundled with the app (via `ofToDataPath`)
+
+Only `.dylib` / `.so` files are loaded. If the same library name appears in both folders, the script-local copy wins.
+
+For the OSC examples in `examples-js/chocons/`, the built library belongs at:
+
+```
+examples-js/chocons/chocons/ofxOscBindings.dylib
+```
+
+(on Linux: `ofxOscBindings.so`)
+
+### Building a chocon
+
+```bash
+cd addons/ofxChoc/chocons/ofxOsc
+make
+```
+
+This produces `ofxOscBindings.dylib` in that directory. Copy it into your script's `chocons/` folder (see path above for the bundled examples).
+
+To author a new chocon, see `addons/ofxChoc/chocons/` — each chocon is a thin Makefile plus a binding `.cpp` that exports `ofxChoc_registerChocon` and `ofxChoc_clearChocon`.
+
+### If a chocon is missing or fails to load
+
+The runtime keeps running — a missing chocon is not fatal.
+
+| Situation | What happens |
+|---|---|
+| `chocons/` folder missing | Skipped silently |
+| `.dylib` / `.so` present but won't load | Error logged (`addon load failed: …`), file skipped |
+| Loads successfully | Notice logged: `loaded chocon: ofxOscBindings.dylib` |
+
+If the chocon never loaded but your script uses `ofx.*`, evaluation fails with a JS error such as `ReferenceError: ofx is not defined`. Code at the top level of the script (outside `setup()`) fails as soon as the file is loaded.
+
+### OSC chocon API (`ofx.osc`)
+
+**Receiver**
+
+```javascript
+var receiver = new ofx.osc.Receiver();
+receiver.setup(port);
+receiver.hasWaitingMessages();
+var m = receiver.getNextMessage();  // { address, args, remoteHost, remotePort } or null
+```
+
+**Sender**
+
+```javascript
+var sender = new ofx.osc.Sender();
+sender.setup(host, port);
+sender.send(address, ...args);            // numbers, strings, bools
+sender.sendBlobFromFile(address, path);   // returns bytes sent, or 0
+sender.sendBlob(address, base64);         // returns bytes sent, or 0
+```
+
+**Blob arguments on receive** — blob args arrive as objects:
+
+```javascript
+{ type: "blob", size: 1234, base64: "..." }
+```
+
+Use `ofx.osc.isBlob(arg)` to test. To load a received image:
+
+```javascript
+receivedImage.loadFromBase64(m.args[0].base64);
+```
+
+Large blobs are base64-encoded for JS interop. Keep images small (same caveat as the C++ OSC examples) or split into multiple messages.
+
+### Running the OSC examples
+
+1. Build the chocon (see above) and copy it to `examples-js/chocons/chocons/`.
+2. Add a PNG at `examples-js/chocons/data/of-logo.png` (same asset used by the C++ `oscSenderExample`).
+3. Run receiver and sender in two terminals:
+
+```bash
+# terminal 1 — from ofJsRuntime/
+./bin/ofJsRuntime.app/Contents/MacOS/ofJsRuntime -f ../examples-js/chocons/oscReceiver.js
+
+# terminal 2
+./bin/ofJsRuntime.app/Contents/MacOS/ofJsRuntime -f ../examples-js/chocons/oscSender.js
+```
+
+Press **I** in the sender to transmit the logo as an OSC blob on `/image`. Mouse movement and button events are sent continuously / on click.
+
 ## Examples
 
 | File | Description |
@@ -136,3 +239,5 @@ var radius = radius || 20;   // only initializes on first load
 | `3d/ribbon.js` | Port of cameraRibbonExample — mouse trail becomes a tapered 3D ribbon; Space to orbit the sculpture |
 | `3d/primitives.js` | Port of 3DPrimitivesExample — sphere, box, and mesh-built torus/cylinder/cone/plane; auto-spin + wireframe toggle |
 | `3d/advanced3d.js` | Port of advanced3dExample — 100-particle swarm with Simple Harmonic Motion; springs to origin + light attractor |
+| `chocons/oscSender.js` | Port of oscSenderExample — sends mouse position, button events, and image blobs to localhost:12345 (requires chocon; see **Chocons** above) |
+| `chocons/oscReceiver.js` | Port of oscReceiveExample — listens on port 12345, displays remote mouse and received image blobs |

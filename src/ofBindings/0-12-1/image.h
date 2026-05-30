@@ -3,6 +3,7 @@
 #include "registry.h"
 #include "helpers.h"
 #include "../../libs/choc/javascript/choc_javascript_QuickJS.h"
+#include "../../libs/choc/memory/choc_Base64.h"
 
 inline void registerOfImageBindings(choc::javascript::Context& ctx, ObjectStore<ofImage>& store)
 {
@@ -12,6 +13,17 @@ inline void registerOfImageBindings(choc::javascript::Context& ctx, ObjectStore<
     ctx.registerFunction("_ofxChoc_image_load", [&store](choc::javascript::ArgumentList args) -> choc::value::Value {
         if (auto* o = store.get(args[0] ? (int)numVal(args[0]) : -1))
             return choc::value::createBool(o->load(args[1] ? std::string(args[1]->getString()) : ""));
+        return choc::value::createBool(false);
+    });
+    ctx.registerFunction("_ofxChoc_image_loadFromBase64", [&store](choc::javascript::ArgumentList args) -> choc::value::Value {
+        if (auto* o = store.get(args[0] ? (int)numVal(args[0]) : -1)) {
+            if (!args[1]) return choc::value::createBool(false);
+            std::string bytes;
+            if (!choc::base64::decodeToContainer(bytes, std::string_view(args[1]->getString())))
+                return choc::value::createBool(false);
+            ofBuffer buff(bytes.data(), bytes.size());
+            return choc::value::createBool(o->load(buff));
+        }
         return choc::value::createBool(false);
     });
     ctx.registerFunction("_ofxChoc_image_save", [&store](choc::javascript::ArgumentList args) -> choc::value::Value {
@@ -107,6 +119,7 @@ inline void registerOfImageBindings(choc::javascript::Context& ctx, ObjectStore<
 var Image = class {
     constructor()               { this._id = _ofxChoc_image_create(); }
     load(path)                  { return _ofxChoc_image_load(this._id, path); }
+    loadFromBase64(base64)      { return _ofxChoc_image_loadFromBase64(this._id, base64); }
     save(path)                  { _ofxChoc_image_save(this._id, path); return this; }
     allocate(w, h)              { _ofxChoc_image_allocate(this._id, w, h); return this; }
     draw(x, y, w=-1, h=-1)     {

@@ -73,15 +73,30 @@ jobs:
           NPROC=$(nproc 2>/dev/null || sysctl -n hw.logicalcpu)
           make -C openFrameworks/addons/ofxChoc/ofJsRuntime -j"$NPROC" Release
 
+      - name: Build chocons
+        run: |
+          NPROC=$(nproc 2>/dev/null || sysctl -n hw.logicalcpu)
+          make -C openFrameworks/addons/ofxChoc/chocons/ofxOsc -j"$NPROC" \
+            OF_ROOT="$(pwd)/openFrameworks"
+
       - name: Package binary (Linux)
         if: matrix.platform == 'linux64'
         run: |
+          mkdir -p dist-linux/data/chocons
           cp openFrameworks/addons/ofxChoc/ofJsRuntime/bin/ofJsRuntime \
-             ofJsRuntime-linux64
+             dist-linux/ofJsRuntime
+          cp openFrameworks/addons/ofxChoc/chocons/ofxOsc/ofxOscBindings.so \
+             dist-linux/data/chocons/
+          cd dist-linux
+          zip -r "$GITHUB_WORKSPACE/ofJsRuntime-linux64.zip" .
 
       - name: Package binary (macOS)
         if: matrix.platform == 'osx'
         run: |
+          APPDIR=openFrameworks/addons/ofxChoc/ofJsRuntime/bin/ofJsRuntime.app
+          mkdir -p "$APPDIR/Contents/Resources/data/chocons"
+          cp openFrameworks/addons/ofxChoc/chocons/ofxOsc/ofxOscBindings.dylib \
+             "$APPDIR/Contents/Resources/data/chocons/"
           cd openFrameworks/addons/ofxChoc/ofJsRuntime/bin
           zip -r "$GITHUB_WORKSPACE/ofJsRuntime-osx.zip" ofJsRuntime.app
 
@@ -89,7 +104,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ofJsRuntime-${{ matrix.platform }}
-          path: ofJsRuntime-*
+          path: ofJsRuntime-*.zip
 
   release:
     name: Publish release
@@ -110,5 +125,5 @@ jobs:
         with:
           generate_release_notes: true
           files: |
-            dist/ofJsRuntime-linux64
+            dist/ofJsRuntime-linux64.zip
             dist/ofJsRuntime-osx.zip
